@@ -1,0 +1,642 @@
+¡Esas son unas ideas fantásticas! Tienes toda la razón, ajustar la velocidad de las ondas le da un aspecto mucho más elegante y fluido a la interacción, eliminando el efecto abrumador.
+He integrado todas tus peticiones en esta versión definitiva:
+ 1. **Respaldo de Datos (Exportar / Importar):** Agregué una sección al final de la pantalla principal. Con un toque puedes descargar un archivo .json con todas tus notas y colección, y con el otro botón puedes restaurarlo en cualquier otro navegador o dispositivo.
+ 2. **Estela Suave y Relajante:** Reduje considerablemente la frecuencia con la que se generan los aros (ahora solo sale uno cada medio segundo) y extendí la duración de su expansión a 4 segundos. El resultado es una estela muy suave que se difumina lentamente.
+ 3. **Fondo Aleatorio en Inicio:** Ahora, cada vez que abras la aplicación o regreses al buscador, la aplicación elegirá aleatoriamente uno de los álbumes que ya tienes en tu colección y lo pondrá como fondo dinámico, dándole mucha vida a la pantalla principal.
+Aquí tienes el código completo. Solo reemplaza el contenido de tu index.html:
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Calificador de Álbumes</title>
+    
+    <!-- FAVICON: Listo para tu propio archivo -->
+    <link rel="icon" type="image/png" href="tu-icono.png">
+
+    <style>
+        :root {
+            --accent: #bb86fc;
+            --text-main: #ffffff;
+            --text-muted: #d0d0d0;
+            --card-bg: rgba(0,0,0,0.4);
+        }
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            color: var(--text-main);
+            min-height: 100vh;
+            background: #0f0f0f; 
+            overflow-x: hidden;
+        }
+
+        /* FONDO LÍQUIDO */
+        @keyframes liquidFlow {
+            0% { transform: scale(1.2) translate(0, 0) rotate(0deg); }
+            33% { transform: scale(1.6) translate(-6%, 8%) rotate(4deg); }
+            66% { transform: scale(1.4) translate(8%, -6%) rotate(-3deg); }
+            100% { transform: scale(1.2) translate(0, 0) rotate(0deg); }
+        }
+
+        #dynamic-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-size: cover; background-position: center;
+            filter: blur(40px) brightness(0.6) saturate(220%);
+            z-index: 1; transition: background-image 1.5s ease-in-out;
+            pointer-events: none;
+            animation: liquidFlow 18s infinite alternate ease-in-out;
+        }
+
+        /* EFECTO DE ONDAS DE AGUA (Estela Suave) */
+        #ripple-container {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none; z-index: 2; overflow: hidden;
+        }
+        
+        .ripple-wave {
+            position: absolute;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            backdrop-filter: blur(12px) brightness(1.1); 
+            -webkit-backdrop-filter: blur(12px) brightness(1.1);
+            /* Modificado a 4 segundos para un efecto relajante de estela */
+            animation: waterRipple 4s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes waterRipple {
+            0% { width: 0px; height: 0px; opacity: 1; border-width: 4px; }
+            100% { width: 350px; height: 350px; opacity: 0; border-width: 0px; }
+        }
+
+        /* CONTENEDOR PRINCIPAL */
+        .container-wrapper {
+            position: relative; z-index: 3;
+            max-width: 900px; margin: 0 auto; padding: 30px 20px;
+        }
+        
+        .glass-panel {
+            background: rgba(15, 15, 15, 0.55);
+            backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px; padding: 30px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+        }
+
+        h1 { border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 15px; font-size: 26px; margin-top: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        
+        /* BÚSQUEDA Y CONTROLES */
+        .controls-row { display: flex; gap: 10px; margin-bottom: 25px; }
+        input[type="text"], select {
+            flex: 1; padding: 14px; border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.3);
+            background: rgba(0,0,0,0.4); color: white; font-size: 16px;
+            backdrop-filter: blur(10px);
+        }
+        input[type="text"]::placeholder { color: rgba(255,255,255,0.6); }
+        select { flex: 0.5; cursor: pointer; }
+        select option { background: #121212; color: white; }
+        
+        button {
+            padding: 14px 24px; border: 1px solid rgba(255,255,255,0.3); border-radius: 12px;
+            background: rgba(255,255,255,0.2); color: white; font-weight: bold; font-size: 16px;
+            cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px);
+        }
+        button:hover { background: rgba(255,255,255,0.35); transform: translateY(-2px); }
+
+        .btn-primary { background: var(--accent); color: #000; border: none; width: 100%; margin-top: 20px; box-shadow: 0 4px 15px rgba(187, 134, 252, 0.4); }
+        .btn-primary:hover { background: #d0a8ff; }
+
+        /* REJILLA DE ÁLBUMES */
+        .grid-container {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 20px; margin-bottom: 30px;
+        }
+        .album-card {
+            background: var(--card-bg); padding: 12px; border-radius: 16px; cursor: pointer; text-align: center;
+            transition: all 0.3s; border: 1px solid rgba(255,255,255,0.1); position: relative;
+        }
+        .album-card:hover { transform: translateY(-5px); background: rgba(0,0,0,0.6); border-color: rgba(255,255,255,0.3); }
+        .album-card img { width: 100%; border-radius: 10px; margin-bottom: 10px; aspect-ratio: 1/1; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.5);}
+        .album-card strong { display: block; font-size: 14px; margin-bottom: 5px; line-height: 1.2; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+        .album-card span { font-size: 12px; color: var(--text-muted); }
+        
+        .score-badge {
+            position: absolute; top: -10px; right: -10px; background: #69f0ae; color: #000; font-weight: bold;
+            padding: 6px 10px; border-radius: 20px; font-size: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.6); border: 2px solid #000;
+        }
+
+        #homeView { display: block; }
+        #albumView { display: none; }
+        
+        /* CABECERA DEL ÁLBUM */
+        .album-header { display: flex; gap: 30px; align-items: center; margin-bottom: 30px; }
+        .album-header img { width: 180px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+        .album-info-text h2 { margin: 0 0 8px 0; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .album-info-text h3 { margin: 0 0 5px 0; color: rgba(255,255,255,0.8); font-weight: normal; }
+        .album-metadata { display: block; font-size: 13px; color: var(--text-muted); margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; }
+        
+        /* CANCIONES Y NOTAS */
+        .track-item {
+            display: flex; justify-content: space-between; align-items: center; padding: 14px 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.15); border-radius: 8px; transition: background 0.2s;
+        }
+        .track-item:hover { background: rgba(255,255,255,0.05); }
+        .track-info { display: flex; align-items: center; text-shadow: 0 1px 2px rgba(0,0,0,0.8); flex: 1; padding-right: 15px;}
+        .track-info span { color: var(--text-muted); margin-right: 15px; width: 25px; display: inline-block; font-weight: bold; }
+        
+        .stepper-control {
+            display: flex; align-items: center; background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.25); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .step-btn {
+            background: transparent; border: none; color: var(--accent); font-size: 22px; width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+        }
+        .step-btn:hover { background: rgba(255,255,255,0.1); transform: none; }
+        .step-value { width: 45px; text-align: center; font-weight: bold; font-size: 16px; color: white; }
+        
+        .notes-section { margin-top: 30px; }
+        .notes-section h3 { margin-bottom: 10px; font-size: 16px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        #albumNotesInput {
+            width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px; color: white; padding: 15px; font-family: inherit; font-size: 15px;
+            resize: vertical; min-height: 100px;
+        }
+        #albumNotesInput:focus { outline: none; border-color: var(--accent); background: rgba(0,0,0,0.6); }
+
+        .score-panel {
+            margin-top: 30px; padding: 25px; background: rgba(0,0,0,0.4); border-radius: 16px; text-align: center;
+            border: 1px solid rgba(255,255,255,0.2); box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+        .score-panel h2 { margin: 0 0 10px 0; font-size: 18px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .score-value { font-size: 64px; font-weight: bold; color: white; margin: 0; text-shadow: 0 4px 12px rgba(0,0,0,0.8); }
+        
+        #loading { display: none; text-align: center; color: var(--text-muted); padding: 20px; font-size: 18px; }
+
+        .backup-section {
+            margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        @media (max-width: 600px) {
+            .container-wrapper { padding: 15px 10px; }
+            .glass-panel { padding: 20px; border-radius: 16px; }
+            .controls-row { flex-direction: column; }
+            .album-header { flex-direction: column; text-align: center; gap: 15px; }
+            .album-header img { width: 220px; }
+            .track-item { flex-direction: column; align-items: flex-start; gap: 12px; }
+            .stepper-control { align-self: flex-end; }
+            .grid-container { grid-template-columns: repeat(2, 1fr); gap: 10px;}
+        }
+    </style>
+</head>
+<body>
+
+    <div id="dynamic-bg"></div>
+    <div id="ripple-container"></div>
+
+    <div class="container-wrapper">
+        <div class="glass-panel">
+            <h1>Calificador de Álbumes</h1>
+            
+            <div id="homeView">
+                <div class="controls-row">
+                    <input type="text" id="searchInput" placeholder="Buscar un nuevo álbum..." onkeypress="if(event.key === 'Enter') searchAlbums()">
+                    <button onclick="searchAlbums()">Buscar</button>
+                </div>
+
+                <div id="loading">Buscando álbumes...</div>
+                <div id="searchResults" class="grid-container"></div>
+
+                <div id="collectionSection">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); margin-top: 30px; margin-bottom: 15px; padding-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+                        <h2 style="font-size: 20px; margin: 0;">Mi Colección</h2>
+                    </div>
+                    
+                    <div class="controls-row">
+                        <input type="text" id="filterCollection" placeholder="Filtrar por artista o álbum..." oninput="renderizarColeccion()">
+                        <select id="sortCollection" onchange="renderizarColeccion()">
+                            <option value="recent">Agregado recientemente</option>
+                            <option value="alpha-album">A-Z (Álbum)</option>
+                            <option value="alpha-artist">A-Z (Artista)</option>
+                            <option value="score-desc">Mejor calificación</option>
+                        </select>
+                    </div>
+
+                    <div id="savedAlbumsGrid" class="grid-container"></div>
+
+                    <!-- NUEVA SECCIÓN: Respaldo de Datos -->
+                    <div class="backup-section">
+                        <h2 style="font-size: 16px; color: var(--text-muted); margin-bottom: 15px;">Respaldo y Recuperación</h2>
+                        <div class="controls-row">
+                            <button onclick="exportData()" style="flex: 1; border-color: var(--accent);">Exportar Respaldo</button>
+                            <button onclick="document.getElementById('importFile').click()" style="flex: 1;">Importar Respaldo</button>
+                            <input type="file" id="importFile" style="display: none;" accept=".json" onchange="importData(event)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="albumView">
+                <div class="album-header" id="albumHeader"></div>
+                <div id="trackList"></div>
+                
+                <div class="score-panel">
+                    <h2>Calificación Promedio</h2>
+                    <p class="score-value" id="finalScore">-</p>
+                </div>
+
+                <div class="notes-section">
+                    <h3>Notas del Álbum</h3>
+                    <textarea id="albumNotesInput" placeholder="Escribe tus notas, opiniones o reseñas de este álbum aquí..." oninput="saveNotes()"></textarea>
+                </div>
+                
+                <button id="btnGuardar" class="btn-primary" onclick="guardarEnColeccion()">Guardar en mi colección</button>
+                <button onclick="cerrarAlbum()" style="margin-top: 15px; width: 100%; padding: 16px;">Volver a inicio</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let savedRatings = JSON.parse(localStorage.getItem('myAlbumRatings')) || {};
+        let myCollection = JSON.parse(localStorage.getItem('myCollectionInfo')) || {};
+        let currentAlbumData = {};
+
+        // LÓGICA DE ESTELA (Ondas Suaves y Espaciadas)
+        let lastRippleTime = 0;
+        document.addEventListener('pointermove', (e) => {
+            const now = Date.now();
+            // Aumentado a 400ms para que se vea mucho más sutil y menos abrumador
+            if (now - lastRippleTime < 400) return; 
+            lastRippleTime = now;
+            
+            const ripple = document.createElement('div');
+            ripple.className = 'ripple-wave';
+            ripple.style.left = e.clientX + 'px';
+            ripple.style.top = e.clientY + 'px';
+            document.getElementById('ripple-container').appendChild(ripple);
+            
+            // Eliminamos la onda del código HTML cuando termina la animación (4s)
+            setTimeout(() => ripple.remove(), 4000);
+        });
+
+        // Al iniciar, cargamos la colección y el fondo aleatorio
+        window.onload = () => { 
+            renderizarColeccion(); 
+            setRandomHomeBackground();
+        };
+
+        // Función para elegir un fondo aleatorio de la colección
+        function setRandomHomeBackground() {
+            const albums = Object.values(myCollection);
+            if (albums.length > 0) {
+                const randomAlbum = albums[Math.floor(Math.random() * albums.length)];
+                document.getElementById('dynamic-bg').style.backgroundImage = `url('${randomAlbum.cover}')`;
+            } else {
+                document.getElementById('dynamic-bg').style.backgroundImage = 'none';
+            }
+        }
+
+        // RESPALDO DE DATOS (Exportar / Importar)
+        function exportData() {
+            const dataToExport = {
+                ratings: savedRatings,
+                collection: myCollection
+            };
+            const jsonStr = JSON.stringify(dataToExport, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Mis-Albumes-Calificados.json';
+            document.body.appendChild(a);
+            a.click();
+            
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (importedData.ratings && importedData.collection) {
+                        savedRatings = importedData.ratings;
+                        myCollection = importedData.collection;
+                        
+                        localStorage.setItem('myAlbumRatings', JSON.stringify(savedRatings));
+                        localStorage.setItem('myCollectionInfo', JSON.stringify(myCollection));
+                        
+                        renderizarColeccion();
+                        setRandomHomeBackground();
+                        alert("¡Tus datos han sido restaurados exitosamente!");
+                    } else {
+                        alert("El archivo no tiene el formato correcto.");
+                    }
+                } catch (error) {
+                    alert("Hubo un error al leer el archivo. Asegúrate de seleccionar un archivo válido.");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Resetea el input para poder subir el mismo archivo después si se necesita
+        }
+
+        function fetchAppleMusic(url) {
+            return new Promise((resolve, reject) => {
+                const callbackName = 'appleCallback_' + Math.round(100000 * Math.random());
+                window[callbackName] = function(data) {
+                    delete window[callbackName];
+                    document.body.removeChild(script);
+                    resolve(data);
+                };
+                const script = document.createElement('script');
+                script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + callbackName;
+                script.onerror = function() {
+                    delete window[callbackName];
+                    document.body.removeChild(script);
+                    reject(new Error('Error de conexión'));
+                };
+                document.body.appendChild(script);
+            });
+        }
+
+        async function searchAlbums() {
+            const query = document.getElementById('searchInput').value;
+            if (!query) return;
+
+            document.getElementById('collectionSection').style.display = 'none';
+            document.getElementById('searchResults').innerHTML = '';
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('dynamic-bg').style.backgroundImage = 'none';
+
+            try {
+                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=album&limit=12`;
+                const data = await fetchAppleMusic(url);
+                
+                document.getElementById('loading').style.display = 'none';
+                
+                if (!data.results || data.results.length === 0) {
+                    document.getElementById('searchResults').innerHTML = '<p style="grid-column: 1/-1; text-align:center;">No se encontraron resultados.</p>';
+                    return;
+                }
+
+                data.results.forEach(album => {
+                    const card = document.createElement('div');
+                    card.className = 'album-card';
+                    const coverUrl = album.artworkUrl100.replace('100x100bb', '400x400bb');
+                    card.innerHTML = `
+                        <img src="${coverUrl}" alt="Portada">
+                        <strong>${album.collectionName}</strong>
+                        <span>${album.artistName}</span>
+                    `;
+                    card.onclick = () => loadAlbumDetails(album.collectionId, coverUrl, album.collectionName, album.artistName, album.releaseDate);
+                    document.getElementById('searchResults').appendChild(card);
+                });
+            } catch (error) {
+                document.getElementById('loading').innerHTML = 'Error al buscar. Intenta de nuevo.';
+            }
+        }
+
+        async function loadAlbumDetails(albumId, coverUrl, albumName, artistName, releaseDateApi) {
+            currentAlbumData = { id: albumId, cover: coverUrl, name: albumName, artist: artistName };
+
+            document.getElementById('homeView').style.display = 'none';
+            document.getElementById('albumView').style.display = 'block';
+            document.getElementById('finalScore').innerText = '-';
+            document.getElementById('finalScore').style.color = "white";
+            
+            const btnGuardar = document.getElementById('btnGuardar');
+            btnGuardar.innerText = "Guardar en mi colección";
+            btnGuardar.style.background = "var(--accent)";
+            btnGuardar.style.color = "#000";
+
+            document.getElementById('dynamic-bg').style.backgroundImage = `url('${coverUrl}')`;
+            
+            if (!savedRatings[albumId]) savedRatings[albumId] = {};
+            document.getElementById('albumNotesInput').value = savedRatings[albumId]['_notes'] || '';
+
+            document.getElementById('trackList').innerHTML = '<p style="text-align:center; padding: 20px;">Cargando lista de canciones...</p>';
+
+            try {
+                const url = `https://itunes.apple.com/lookup?id=${albumId}&entity=song`;
+                const data = await fetchAppleMusic(url);
+                
+                const albumInfo = data.results[0]; 
+                const tracks = data.results.filter(item => item.wrapperType === 'track');
+                
+                const dateToUse = releaseDateApi || albumInfo.releaseDate;
+                const releaseYear = dateToUse ? new Date(dateToUse).getFullYear() : 'Desconocido';
+                
+                const totalMs = tracks.reduce((sum, track) => sum + (track.trackTimeMillis || 0), 0);
+                const totalMins = Math.floor(totalMs / 60000);
+                const totalSecs = Math.floor((totalMs % 60000) / 1000);
+                const durationStr = totalMins > 0 ? `${totalMins} min ${totalSecs} s` : 'Duración desconocida';
+
+                document.getElementById('albumHeader').innerHTML = `
+                    <img src="${coverUrl}" alt="Portada">
+                    <div class="album-info-text">
+                        <h2>${albumName}</h2>
+                        <h3>${artistName}</h3>
+                        <span class="album-metadata">
+                            <strong>Lanzamiento:</strong> ${releaseYear} &nbsp;|&nbsp; 
+                            <strong>Pistas:</strong> ${tracks.length} &nbsp;|&nbsp; 
+                            <strong>Duración:</strong> ${durationStr}
+                        </span>
+                    </div>
+                `;
+
+                document.getElementById('trackList').innerHTML = '';
+
+                tracks.forEach((track, index) => {
+                    const trackId = track.trackId;
+                    const savedScore = savedRatings[albumId][trackId];
+                    const displayValue = (savedScore !== undefined && typeof savedScore === 'number') ? savedScore.toFixed(1) : '-';
+
+                    const trackDiv = document.createElement('div');
+                    trackDiv.className = 'track-item';
+                    
+                    trackDiv.innerHTML = `
+                        <div class="track-info">
+                            <span>${track.trackNumber || index + 1}</span> 
+                            ${track.trackName}
+                        </div>
+                        <div class="stepper-control">
+                            <button class="step-btn" onclick="adjustRating(${albumId}, '${trackId}', -0.5)">-</button>
+                            <span class="step-value" id="val-${trackId}">${displayValue}</span>
+                            <button class="step-btn" onclick="adjustRating(${albumId}, '${trackId}', 0.5)">+</button>
+                        </div>
+                    `;
+                    document.getElementById('trackList').appendChild(trackDiv);
+                });
+                
+                calculateAverage();
+
+            } catch (error) {
+                document.getElementById('trackList').innerHTML = '<p style="text-align:center; color:#ff6b6b;">Hubo un problema al cargar las canciones.</p>';
+            }
+        }
+
+        function adjustRating(albumId, trackId, delta) {
+            let current = savedRatings[albumId][trackId];
+            
+            if (current === undefined || current === '' || typeof current !== 'number') {
+                current = (delta > 0) ? 5.0 : 0.0;
+            } else {
+                current = parseFloat(current) + delta;
+            }
+            
+            if (current < 0) {
+                delete savedRatings[albumId][trackId];
+                document.getElementById(`val-${trackId}`).innerText = '-';
+            } else {
+                if (current > 10) current = 10;
+                savedRatings[albumId][trackId] = current;
+                document.getElementById(`val-${trackId}`).innerText = current.toFixed(1);
+            }
+            
+            localStorage.setItem('myAlbumRatings', JSON.stringify(savedRatings));
+            calculateAverage();
+        }
+
+        function saveNotes() {
+            const notesText = document.getElementById('albumNotesInput').value;
+            savedRatings[currentAlbumData.id]['_notes'] = notesText;
+            localStorage.setItem('myAlbumRatings', JSON.stringify(savedRatings));
+        }
+
+        function calculateAverage() {
+            const albumId = currentAlbumData.id;
+            const ratingsKeys = Object.keys(savedRatings[albumId] || {});
+            
+            const validRatings = ratingsKeys
+                .filter(k => k !== '_notes')
+                .map(k => savedRatings[albumId][k])
+                .filter(r => typeof r === 'number');
+
+            const finalScoreElement = document.getElementById('finalScore');
+            
+            if (validRatings.length === 0) {
+                finalScoreElement.innerText = '-';
+                finalScoreElement.style.color = "white";
+            } else {
+                const sum = validRatings.reduce((a, b) => a + b, 0);
+                const average = sum / validRatings.length;
+                const formattedAverage = average.toFixed(1);
+                
+                finalScoreElement.innerText = formattedAverage;
+                
+                let scoreColor = "#ff5252"; 
+                if (average >= 8) scoreColor = "#69f0ae"; 
+                else if (average >= 5) scoreColor = "#ffd54f"; 
+                
+                finalScoreElement.style.color = scoreColor;
+
+                if (myCollection[albumId]) {
+                    myCollection[albumId].score = formattedAverage;
+                    myCollection[albumId].color = scoreColor;
+                    localStorage.setItem('myCollectionInfo', JSON.stringify(myCollection));
+                }
+            }
+        }
+
+        function guardarEnColeccion() {
+            const currentScore = document.getElementById('finalScore').innerText;
+            if (currentScore === '-') {
+                alert("Califica al menos una canción antes de guardar el álbum.");
+                return;
+            }
+
+            const albumId = currentAlbumData.id;
+            const scoreColor = document.getElementById('finalScore').style.color;
+
+            myCollection[albumId] = {
+                id: albumId,
+                cover: currentAlbumData.cover,
+                name: currentAlbumData.name,
+                artist: currentAlbumData.artist,
+                score: currentScore,
+                color: scoreColor,
+                timestamp: Date.now() 
+            };
+
+            localStorage.setItem('myCollectionInfo', JSON.stringify(myCollection));
+
+            const btn = document.getElementById('btnGuardar');
+            btn.innerText = "¡Guardado con éxito!";
+            btn.style.background = "#69f0ae"; 
+            btn.style.color = "#000";
+        }
+
+        function renderizarColeccion() {
+            const grid = document.getElementById('savedAlbumsGrid');
+            grid.innerHTML = '';
+            
+            let albums = Object.values(myCollection);
+            
+            if (albums.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; color: var(--text-muted);">Tu colección está vacía. Busca y guarda tu primer álbum.</p>';
+                return;
+            }
+
+            const filterText = document.getElementById('filterCollection').value.toLowerCase();
+            if (filterText) {
+                albums = albums.filter(a => 
+                    a.name.toLowerCase().includes(filterText) || 
+                    a.artist.toLowerCase().includes(filterText)
+                );
+            }
+
+            const sortMode = document.getElementById('sortCollection').value;
+            if (sortMode === 'recent') {
+                albums.sort((a, b) => b.timestamp - a.timestamp);
+            } else if (sortMode === 'alpha-album') {
+                albums.sort((a, b) => a.name.localeCompare(b.name));
+            } else if (sortMode === 'alpha-artist') {
+                albums.sort((a, b) => a.artist.localeCompare(b.artist));
+            } else if (sortMode === 'score-desc') {
+                albums.sort((a, b) => parseFloat(b.score) - parseFloat(a.score));
+            }
+
+            if (albums.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; color: var(--text-muted);">No hay coincidencias en tu colección.</p>';
+                return;
+            }
+
+            albums.forEach(album => {
+                const card = document.createElement('div');
+                card.className = 'album-card';
+                card.innerHTML = `
+                    <div class="score-badge" style="background: ${album.color || '#69f0ae'}">${album.score}</div>
+                    <img src="${album.cover}" alt="Portada">
+                    <strong>${album.name}</strong>
+                    <span>${album.artist}</span>
+                `;
+                card.onclick = () => loadAlbumDetails(album.id, album.cover, album.name, album.artist);
+                grid.appendChild(card);
+            });
+        }
+
+        function cerrarAlbum() {
+            document.getElementById('albumView').style.display = 'none';
+            document.getElementById('homeView').style.display = 'block';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchResults').innerHTML = '';
+            document.getElementById('collectionSection').style.display = 'block';
+            
+            renderizarColeccion();
+            setRandomHomeBackground(); // Actualiza el fondo al volver a la pantalla principal
+        }
+    </script>
+</body>
+</html>
+
+```
