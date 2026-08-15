@@ -36,7 +36,6 @@
             100% { transform: scale(1.2) translate(0, 0) rotate(0deg); }
         }
 
-        /* ANIMACIÓN ACTIVADA CON MÚSICA (Más rápida e intensa) */
         @keyframes musicPulseFlow {
             0% { transform: scale(1.3) translate(0, 0) rotate(0deg); filter: blur(30px) brightness(0.85) saturate(300%); }
             25% { transform: scale(1.7) translate(-8%, 10%) rotate(8deg); filter: blur(25px) brightness(1) saturate(350%); }
@@ -55,7 +54,6 @@
             animation: liquidFlow 18s infinite alternate ease-in-out;
         }
 
-        /* Clase aplicada cuando se reproduce música */
         #dynamic-bg.audio-active {
             animation: musicPulseFlow 4s infinite alternate ease-in-out !important;
         }
@@ -174,6 +172,13 @@
             border-left: 3px solid var(--gold);
         }
 
+        .star-icon {
+            color: var(--gold);
+            margin-left: 6px;
+            font-size: 14px;
+            text-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
+        }
+
         .track-info { display: flex; align-items: center; text-shadow: 0 1px 2px rgba(0,0,0,0.8); flex: 1; padding-right: 15px; cursor: pointer; }
         .track-info span.num { color: var(--text-muted); margin-right: 12px; width: 22px; display: inline-block; font-weight: bold; }
         .play-icon { font-size: 12px; opacity: 0.6; margin-left: 8px; transition: opacity 0.2s; }
@@ -237,20 +242,31 @@
         .chart-section h3 { margin-top: 0; font-size: 15px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
         
         .chart-container {
-            display: flex; align-items: flex-end; gap: 6px; height: 120px;
+            display: flex; align-items: flex-end; gap: 4px; height: 120px;
             padding-top: 15px; border-bottom: 1px solid rgba(255,255,255,0.2);
+            overflow: hidden;
         }
         .chart-bar-wrapper {
-            flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;
+            flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;
         }
         .chart-bar {
             width: 100%; background: var(--accent); border-radius: 4px 4px 0 0;
             transition: height 0.5s ease; min-height: 2px; opacity: 0.85;
         }
         .chart-bar:hover { opacity: 1; background: #d0a8ff; }
-        .chart-label { font-size: 10px; color: var(--text-muted); margin-top: 6px; text-align: center; }
+        
+        /* CORRECCIÓN DE DESFASE EN TEXTO */
+        .chart-label { 
+            font-size: 9px; 
+            color: var(--text-muted); 
+            margin-top: 6px; 
+            text-align: center; 
+            white-space: nowrap; 
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
-        /* ESTILOS DE LA NUEVA GRÁFICA DE GÉNEROS */
         .genre-legend-container {
             display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; justify-content: center;
         }
@@ -271,6 +287,7 @@
             .track-item { flex-direction: column; align-items: flex-start; gap: 12px; }
             .stepper-control { align-self: flex-end; }
             .grid-container { grid-template-columns: repeat(2, 1fr); gap: 10px;}
+            .chart-label { font-size: 8px; }
         }
     </style>
 </head>
@@ -296,7 +313,6 @@
 
                 <div id="collectionSection">
                     
-                    <!-- RESUMEN ESTADÍSTICO DE COLECCIÓN -->
                     <div class="stats-summary">
                         <div class="stat-box">
                             <h4>Álbumes</h4>
@@ -312,19 +328,16 @@
                         </div>
                     </div>
 
-                    <!-- GRÁFICA DE ÁLBUMES -->
                     <div class="chart-section">
                         <h3>Calificaciones de Álbumes</h3>
                         <div id="albumsChart" class="chart-container"></div>
                     </div>
 
-                    <!-- GRÁFICA DE CANCIONES (DEL 1 AL 10 - OPTIMIZADA PANTALLA CHICA) -->
                     <div class="chart-section">
                         <h3>Calificaciones de Canciones</h3>
                         <div id="songsChart" class="chart-container"></div>
                     </div>
 
-                    <!-- NUEVA GRÁFICA DE GÉNEROS MUSICALES -->
                     <div class="chart-section">
                         <h3>Distribución de Géneros Musicales</h3>
                         <div id="genresBarChart" class="chart-container" style="height: 100px;"></div>
@@ -333,6 +346,7 @@
 
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); margin-top: 30px; margin-bottom: 15px; padding-bottom: 10px; flex-wrap: wrap; gap: 10px;">
                         <h2 style="font-size: 20px; margin: 0;">Mi Colección</h2>
+                        <button onclick="playRandomCollectionAlbum()" style="padding: 6px 12px; font-size: 13px; border-radius: 8px;">🎲 Álbum Aleatorio</button>
                     </div>
                     
                     <div class="controls-row">
@@ -350,7 +364,6 @@
 
                     <div id="savedAlbumsGrid" class="grid-container"></div>
 
-                    <!-- RESPALDO DE DATOS -->
                     <div class="backup-section">
                         <h2 style="font-size: 16px; color: var(--text-muted); margin-bottom: 15px;">Respaldo y Recuperación</h2>
                         <div class="controls-row">
@@ -407,7 +420,6 @@
 
         const genrePalette = ['#bb86fc', '#03dac6', '#ff4081', '#ffd700', '#7c4dff', '#69f0ae', '#ff6e40', '#18ffff', '#ff5252', '#e040fb'];
 
-        // ONDAS LÍQUIDAS
         let lastRippleTime = 0;
         document.addEventListener('pointermove', (e) => {
             const now = Date.now();
@@ -437,6 +449,16 @@
             } else {
                 document.getElementById('dynamic-bg').style.backgroundImage = 'none';
             }
+        }
+
+        function playRandomCollectionAlbum() {
+            const albums = Object.values(myCollection);
+            if (albums.length === 0) {
+                alert("Primero agrega álbumes a tu colección.");
+                return;
+            }
+            const randomAlbum = albums[Math.floor(Math.random() * albums.length)];
+            loadAlbumDetails(randomAlbum.id, randomAlbum.cover, randomAlbum.name, randomAlbum.artist, null, null, randomAlbum.genre);
         }
 
         function exportData() {
@@ -611,7 +633,6 @@
                 const totalSecs = Math.floor((totalMs % 60000) / 1000);
                 const durationStr = totalMins > 0 ? `${totalMins} min ${totalSecs} s` : 'Duración desconocida';
 
-                // INCORPORACIÓN DEL GÉNERO MUSICAL
                 document.getElementById('albumHeader').innerHTML = `
                     <img src="${coverUrl}" alt="Portada">
                     <div class="album-info-text">
@@ -640,14 +661,28 @@
             const container = document.getElementById('trackList');
             container.innerHTML = '';
 
+            // CALCULAR MÁXIMA PUNTUACIÓN PARA LA ESTRELLA (TOP TRACK / CANCIÓN FAVORITA)
+            let maxScoreInAlbum = -1;
+            Object.keys(savedRatings[albumId] || {}).forEach(k => {
+                if (k !== '_notes' && typeof savedRatings[albumId][k] === 'number') {
+                    if (savedRatings[albumId][k] > maxScoreInAlbum) {
+                        maxScoreInAlbum = savedRatings[albumId][k];
+                    }
+                }
+            });
+
             tracksToRender.forEach((track, index) => {
                 const trackId = track.trackId;
                 const savedScore = savedRatings[albumId][trackId];
                 const displayValue = (savedScore !== undefined && typeof savedScore === 'number') ? savedScore.toFixed(1) : '-';
 
-                const trackDiv = document.createElement('div');
-                // RESALTADO DE CANCIÓN DESTACADA (>= 9.0)
                 const isHighlight = (typeof savedScore === 'number' && savedScore >= 9.0);
+                
+                // CONDICIONAL PARA AÑADIR LA ESTRELLA A LAS NOTAS MÁS ALTAS
+                const isTopTrack = (typeof savedScore === 'number' && savedScore > 0 && savedScore === maxScoreInAlbum);
+                const starHtml = isTopTrack ? `<span class="star-icon" title="Top Canción Favorita">★</span>` : '';
+
+                const trackDiv = document.createElement('div');
                 trackDiv.className = `track-item ${isHighlight ? 'highlighted-track' : ''}`;
                 
                 const trackExplicitBadge = (track.trackExplicitness === 'explicit') ? `<span class="explicit-tag" style="font-size:9px; margin-left:6px;">E</span>` : '';
@@ -656,7 +691,7 @@
                     <div class="track-info" onclick="playPreview('${track.previewUrl}', this)">
                         <span class="num">${track.trackNumber || index + 1}</span> 
                         <div>
-                            ${track.trackName} ${trackExplicitBadge}
+                            ${track.trackName} ${trackExplicitBadge} ${starHtml}
                             <span class="play-icon">▶ Escuchar</span>
                         </div>
                     </div>
@@ -670,7 +705,6 @@
             });
         }
 
-        // QoL: REPRODUCTOR CON ACTIVACIÓN DE FONDO DINÁMICO
         function playPreview(previewUrl, element) {
             if (!previewUrl) return;
             const audio = document.getElementById('audioPreview');
@@ -680,7 +714,7 @@
                 audio.pause();
                 currentPlayingAudio = null;
                 element.querySelector('.play-icon').innerText = '▶ Escuchar';
-                bg.classList.remove('audio-active'); // Vuelve al estado normal
+                bg.classList.remove('audio-active');
                 return;
             }
 
@@ -690,7 +724,7 @@
             audio.play();
             currentPlayingAudio = previewUrl;
             element.querySelector('.play-icon').innerText = '⏸ Pausar';
-            bg.classList.add('audio-active'); // Activa la aceleración del fondo
+            bg.classList.add('audio-active');
 
             audio.onended = () => {
                 element.querySelector('.play-icon').innerText = '▶ Escuchar';
@@ -716,16 +750,18 @@
             
             if (current < 0) {
                 delete savedRatings[albumId][trackId];
-                const el = document.getElementById(`val-${trackId}`);
-                if (el) el.innerText = '-';
             } else {
                 if (current > 10) current = 10;
                 savedRatings[albumId][trackId] = current;
-                const el = document.getElementById(`val-${trackId}`);
-                if (el) el.innerText = current.toFixed(1);
             }
             
             localStorage.setItem('myAlbumRatings', JSON.stringify(savedRatings));
+            
+            // INDICA CAMBIOS SIN GUARDAR EN EL BOTÓN
+            const btnGuardar = document.getElementById('btnGuardar');
+            btnGuardar.innerText = "Guardar cambios en mi colección *";
+            btnGuardar.style.background = "var(--accent)";
+
             filterTracks();
             calculateAverage();
         }
@@ -734,6 +770,9 @@
             const notesText = document.getElementById('albumNotesInput').value;
             savedRatings[currentAlbumData.id]['_notes'] = notesText;
             localStorage.setItem('myAlbumRatings', JSON.stringify(savedRatings));
+            
+            const btnGuardar = document.getElementById('btnGuardar');
+            btnGuardar.innerText = "Guardar cambios en mi colección *";
         }
 
         function clearNotes() {
@@ -895,7 +934,6 @@
             });
         }
 
-        // GENERACIÓN DE GRÁFICAS Y ESTADÍSTICAS
         function renderCharts() {
             const albums = Object.values(myCollection);
             
@@ -950,7 +988,7 @@
                 albumsChartContainer.appendChild(wrapper);
             });
 
-            // 2. GRÁFICA DE CANCIONES (PANTALLA CHICA: DE 1 EN 1 DEL 1 AL 10)
+            // 2. GRÁFICA DE CANCIONES (1 AL 10 - FORMATO CORREGIDO PARA PANTALLAS CHICAS)
             const songBins10 = new Array(10).fill(0);
             allSongRatings.forEach(s => {
                 let binIndex = Math.min(Math.floor(s), 9);
@@ -991,7 +1029,6 @@
                 const color = genrePalette[idx % genrePalette.length];
                 const pct = ((count / totalGenreAlbums) * 100).toFixed(0);
 
-                // Barra
                 const wrapper = document.createElement('div');
                 wrapper.className = 'chart-bar-wrapper';
                 wrapper.innerHTML = `
@@ -1000,7 +1037,6 @@
                 `;
                 genresBarChart.appendChild(wrapper);
 
-                // Leyenda
                 const item = document.createElement('div');
                 item.className = 'genre-legend-item';
                 item.innerHTML = `<span class="genre-color-dot" style="background: ${color};"></span> ${genreName} (${count})`;
