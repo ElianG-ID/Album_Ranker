@@ -155,7 +155,7 @@
         }
         .track-item:hover { background: rgba(255,255,255,0.08); }
         
-        /* QoL: RESALTADO DE CANCIÓN DESTACADA (10 o 9.5) */
+        /* RESALTADO DE CANCIÓN DESTACADA (>= 9.0) */
         .track-item.highlighted-track {
             background: rgba(255, 215, 0, 0.12);
             border-left: 3px solid var(--gold);
@@ -196,7 +196,6 @@
         .score-panel h2 { margin: 0 0 5px 0; font-size: 18px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
         .progress-sub { font-size: 13px; color: var(--accent); margin-bottom: 10px; display: block; }
         
-        /* QoL: BARRA DE PROGRESO VISUAL */
         .progress-bar-container {
             width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 15px; overflow: hidden;
         }
@@ -209,6 +208,35 @@
         #loading { display: none; text-align: center; color: var(--text-muted); padding: 20px; font-size: 18px; }
         #cancelSearchBtn { display: none; width: 100%; margin-bottom: 20px; background: rgba(255,255,255,0.1); }
 
+        /* ESTILOS DE ESTADÍSTICAS Y GRÁFICAS ESTILO LETTERBOXD */
+        .stats-summary {
+            display: flex; justify-content: space-around; background: rgba(0,0,0,0.3);
+            border-radius: 12px; padding: 15px; margin-top: 20px; margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.08); text-align: center;
+        }
+        .stat-box h4 { margin: 0; font-size: 12px; color: var(--text-muted); text-transform: uppercase; }
+        .stat-box p { margin: 5px 0 0 0; font-size: 22px; font-weight: bold; color: var(--accent); }
+
+        .chart-section {
+            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; padding: 20px; margin-bottom: 25px;
+        }
+        .chart-section h3 { margin-top: 0; font-size: 15px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        
+        .chart-container {
+            display: flex; align-items: flex-end; gap: 4px; height: 120px;
+            padding-top: 15px; border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        .chart-bar-wrapper {
+            flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;
+        }
+        .chart-bar {
+            width: 100%; background: var(--accent); border-radius: 4px 4px 0 0;
+            transition: height 0.5s ease; min-height: 2px; opacity: 0.85;
+        }
+        .chart-bar:hover { opacity: 1; background: #d0a8ff; }
+        .chart-label { font-size: 9px; color: var(--text-muted); margin-top: 6px; text-align: center; }
+
         .backup-section { margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
 
         @media (max-width: 600px) {
@@ -220,6 +248,7 @@
             .track-item { flex-direction: column; align-items: flex-start; gap: 12px; }
             .stepper-control { align-self: flex-end; }
             .grid-container { grid-template-columns: repeat(2, 1fr); gap: 10px;}
+            .chart-label { font-size: 8px; transform: rotate(-45deg); margin-top: 10px; }
         }
     </style>
 </head>
@@ -238,13 +267,41 @@
                     <button onclick="searchAlbums()">Buscar</button>
                 </div>
 
-                <!-- QoL: BOTÓN PARA REGRESAR DE LA BÚSQUEDA -->
                 <button id="cancelSearchBtn" onclick="cancelSearch()">✕ Cancelar búsqueda / Volver a inicio</button>
 
                 <div id="loading">Buscando álbumes...</div>
                 <div id="searchResults" class="grid-container"></div>
 
                 <div id="collectionSection">
+                    
+                    <!-- RESUMEN ESTADÍSTICO DE COLECCIÓN -->
+                    <div class="stats-summary">
+                        <div class="stat-box">
+                            <h4>Álbumes</h4>
+                            <p id="statTotalAlbums">0</p>
+                        </div>
+                        <div class="stat-box">
+                            <h4>Promedio</h4>
+                            <p id="statAvgScore">-</p>
+                        </div>
+                        <div class="stat-box">
+                            <h4>Pistas</h4>
+                            <p id="statTotalTracks">0</p>
+                        </div>
+                    </div>
+
+                    <!-- GRÁFICA DE ÁLBUMES (LETTERBOXD STYLE - 10 EN 10) -->
+                    <div class="chart-section">
+                        <h3>Distribución de Calificaciones de Álbumes</h3>
+                        <div id="albumsChart" class="chart-container"></div>
+                    </div>
+
+                    <!-- GRÁFICA DE CANCIONES (LETTERBOXD STYLE - 5 EN 5) -->
+                    <div class="chart-section">
+                        <h3>Distribución de Calificaciones de Canciones</h3>
+                        <div id="songsChart" class="chart-container"></div>
+                    </div>
+
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); margin-top: 30px; margin-bottom: 15px; padding-bottom: 10px; flex-wrap: wrap; gap: 10px;">
                         <h2 style="font-size: 20px; margin: 0;">Mi Colección</h2>
                     </div>
@@ -285,7 +342,6 @@
                 <div class="score-panel">
                     <h2>Calificación</h2>
                     <span id="progressTrack" class="progress-sub">0 / 0 canciones puntuadas</span>
-                    <!-- BARRA DE PROGRESO -->
                     <div class="progress-bar-container">
                         <div id="progressBarFill" class="progress-bar-fill"></div>
                     </div>
@@ -336,6 +392,7 @@
         window.onload = () => { 
             renderizarColeccion(); 
             setRandomHomeBackground();
+            renderCharts();
         };
 
         function setRandomHomeBackground() {
@@ -381,6 +438,7 @@
                         
                         renderizarColeccion();
                         setRandomHomeBackground();
+                        renderCharts();
                         alert("¡Tus datos han sido restaurados exitosamente!");
                     } else {
                         alert("El archivo no tiene el formato correcto.");
@@ -412,7 +470,7 @@
             });
         }
 
-        // BÚSQUEDA CORREGIDA: WORKAROUND PARA MOSTRAR CONTENIDO EXPLÍCITO
+        // BÚSQUEDA DEFINITIVA POR CANCIONES PARA GARANTIZAR CONTENIDO EXPLÍCITO SINO
         async function searchAlbums() {
             const query = document.getElementById('searchInput').value;
             if (!query) return;
@@ -424,8 +482,8 @@
             document.getElementById('dynamic-bg').style.backgroundImage = 'none';
 
             try {
-                // Se agrega atributo específico y país 'us' para forzar la muestra de explícitos en el catálogo público
-                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=album&attribute=albumTerm&explicit=Yes&limit=50&country=us`;
+                // Buscamos canciones directamente (entity=song) lo cual NUNCA filtra contenido explícito
+                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&explicit=Yes&limit=100`;
                 const data = await fetchAppleMusic(url);
                 
                 document.getElementById('loading').style.display = 'none';
@@ -435,16 +493,30 @@
                     return;
                 }
 
-                data.results.forEach(album => {
+                // Agrupamos por álbum para evitar repetidos
+                const albumMap = new Map();
+                data.results.forEach(song => {
+                    if (song.collectionId && !albumMap.has(song.collectionId)) {
+                        albumMap.set(song.collectionId, {
+                            id: song.collectionId,
+                            name: song.collectionName,
+                            artist: song.artistName,
+                            cover: song.artworkUrl100.replace('100x100bb', '400x400bb'),
+                            releaseDate: song.releaseDate,
+                            explicitness: song.collectionExplicitness || song.trackExplicitness
+                        });
+                    }
+                });
+
+                albumMap.forEach(album => {
                     const card = document.createElement('div');
                     card.className = 'album-card';
-                    const coverUrl = album.artworkUrl100.replace('100x100bb', '400x400bb');
                     card.innerHTML = `
-                        <img src="${coverUrl}" alt="Portada">
-                        <strong>${album.collectionName}</strong>
-                        <span>${album.artistName}</span>
+                        <img src="${album.cover}" alt="Portada">
+                        <strong>${album.name}</strong>
+                        <span>${album.artist}</span>
                     `;
-                    card.onclick = () => loadAlbumDetails(album.collectionId, coverUrl, album.collectionName, album.artistName, album.releaseDate, album.collectionExplicitness);
+                    card.onclick = () => loadAlbumDetails(album.id, album.cover, album.name, album.artist, album.releaseDate, album.explicitness);
                     document.getElementById('searchResults').appendChild(card);
                 });
             } catch (error) {
@@ -452,7 +524,6 @@
             }
         }
 
-        // REGRESAR DE LA BÚSQUEDA
         function cancelSearch() {
             document.getElementById('searchInput').value = '';
             document.getElementById('searchResults').innerHTML = '';
@@ -486,8 +557,7 @@
             document.getElementById('trackList').innerHTML = '<p style="text-align:center; padding: 20px;">Cargando lista de canciones...</p>';
 
             try {
-                // WORKAROUND OBTENCIÓN COMPLETA DE CANCIONES (INCLUYENDO EXPLÍCITAS)
-                const url = `https://itunes.apple.com/lookup?id=${albumId}&entity=song&explicit=Yes&country=us`;
+                const url = `https://itunes.apple.com/lookup?id=${albumId}&entity=song&explicit=Yes`;
                 const data = await fetchAppleMusic(url);
                 
                 const albumInfo = data.results[0]; 
@@ -498,7 +568,7 @@
                 const dateToUse = releaseDateApi || albumInfo.releaseDate;
                 const releaseYear = dateToUse ? new Date(dateToUse).getFullYear() : 'Desconocido';
                 
-                const isExplicit = (explicitness === 'explicit' || albumInfo.collectionExplicitness === 'explicit');
+                const isExplicit = (explicitness === 'explicit' || albumInfo.collectionExplicitness === 'explicit' || tracks.some(t => t.trackExplicitness === 'explicit'));
                 const explicitBadgeHtml = isExplicit ? `<span class="explicit-tag" title="Contenido Explícito">E</span>` : '';
 
                 const totalMs = tracks.reduce((sum, track) => sum + (track.trackTimeMillis || 0), 0);
@@ -539,8 +609,8 @@
                 const displayValue = (savedScore !== undefined && typeof savedScore === 'number') ? savedScore.toFixed(1) : '-';
 
                 const trackDiv = document.createElement('div');
-                // QoL: Resaltar canciones destacadas (>= 9.5)
-                const isHighlight = (typeof savedScore === 'number' && savedScore >= 9.5);
+                // CAMBIO: Resaltado ampliado a calificaciones >= 9.0
+                const isHighlight = (typeof savedScore === 'number' && savedScore >= 9.0);
                 trackDiv.className = `track-item ${isHighlight ? 'highlighted-track' : ''}`;
                 
                 const trackExplicitBadge = (track.trackExplicitness === 'explicit') ? `<span class="explicit-tag" style="font-size:9px; margin-left:6px;">E</span>` : '';
@@ -614,8 +684,6 @@
             }
             
             localStorage.setItem('myAlbumRatings', JSON.stringify(savedRatings));
-            
-            // Renderizado leve para actualizar resaltado si es nota alta
             filterTracks();
             calculateAverage();
         }
@@ -647,7 +715,6 @@
             
             progressElement.innerText = `${validRatings.length} / ${currentTotalTracksCount} canciones puntuadas`;
             
-            // Actualizar Barra de Progreso
             const percentage = currentTotalTracksCount > 0 ? (validRatings.length / currentTotalTracksCount) * 100 : 0;
             progressBarFill.style.width = `${percentage}%`;
 
@@ -703,6 +770,7 @@
             btn.style.color = "#000";
             
             document.getElementById('btnEliminar').style.display = 'block';
+            renderCharts();
         }
 
         function eliminarDeColeccion() {
@@ -762,6 +830,87 @@
             });
         }
 
+        // GENERACIÓN DE GRÁFICAS Y ESTADÍSTICAS EN PANTALLA PRINCIPAL
+        function renderCharts() {
+            const albums = Object.values(myCollection);
+            
+            // Actualizar resumen de cabecera
+            document.getElementById('statTotalAlbums').innerText = albums.length;
+            
+            let totalTracksScoreCount = 0;
+            let sumAlbumScores = 0;
+
+            albums.forEach(a => {
+                sumAlbumScores += parseFloat(a.score) || 0;
+            });
+
+            const avgAlbumScore = albums.length > 0 ? (sumAlbumScores / albums.length).toFixed(1) : '-';
+            document.getElementById('statAvgScore').innerText = avgAlbumScore;
+
+            // Recopilar todas las notas de canciones
+            let allSongRatings = [];
+            Object.keys(savedRatings).forEach(albumId => {
+                Object.keys(savedRatings[albumId]).forEach(trackId => {
+                    if (trackId !== '_notes' && typeof savedRatings[albumId][trackId] === 'number') {
+                        allSongRatings.push(savedRatings[albumId][trackId]);
+                    }
+                });
+            });
+
+            document.getElementById('statTotalTracks').innerText = allSongRatings.length;
+
+            // 1. DIBUJAR GRÁFICA DE ÁLBUMES (Rangos de 10 en 10: 0-1, 1-2, 2-3... hasta 9-10)
+            const albumBins = new Array(10).fill(0);
+            albums.forEach(a => {
+                const score = parseFloat(a.score);
+                if (!isNaN(score)) {
+                    let binIndex = Math.min(Math.floor(score), 9);
+                    albumBins[binIndex]++;
+                }
+            });
+
+            const maxAlbumBin = Math.max(...albumBins, 1);
+            const albumsChartContainer = document.getElementById('albumsChart');
+            albumsChartContainer.innerHTML = '';
+
+            const albumLabels = ['0-1', '1-2', '2-3', '3-4', '4-5', '5-6', '6-7', '7-8', '8-9', '9-10'];
+            albumBins.forEach((count, i) => {
+                const heightPct = (count / maxAlbumBin) * 100;
+                const wrapper = document.createElement('div');
+                wrapper.className = 'chart-bar-wrapper';
+                wrapper.innerHTML = `
+                    <div class="chart-bar" style="height: ${heightPct}%;" title="${count} álbumes en rango ${albumLabels[i]}"></div>
+                    <span class="chart-label">${albumLabels[i]}</span>
+                `;
+                albumsChartContainer.appendChild(wrapper);
+            });
+
+            // 2. DIBUJAR GRÁFICA DE CANCIONES (Rangos de 5 en 5: 0.0-0.5, 0.5-1.0... hasta 9.5-10.0 => 20 barras)
+            const songBins = new Array(21).fill(0); // 0 a 10 con pasos de 0.5
+            allSongRatings.forEach(s => {
+                let binIndex = Math.min(Math.floor(s * 2), 20);
+                songBins[binIndex]++;
+            });
+
+            const maxSongBin = Math.max(...songBins, 1);
+            const songsChartContainer = document.getElementById('songsChart');
+            songsChartContainer.innerHTML = '';
+
+            for (let i = 0; i <= 20; i++) {
+                const scoreVal = (i * 0.5).toFixed(1);
+                const count = songBins[i];
+                const heightPct = (count / maxSongBin) * 100;
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = 'chart-bar-wrapper';
+                wrapper.innerHTML = `
+                    <div class="chart-bar" style="height: ${heightPct}%;" title="${count} canciones con nota ${scoreVal}"></div>
+                    <span class="chart-label">${scoreVal}</span>
+                `;
+                songsChartContainer.appendChild(wrapper);
+            }
+        }
+
         function cerrarAlbum() {
             const audio = document.getElementById('audioPreview');
             if (audio) audio.pause();
@@ -776,6 +925,7 @@
             
             renderizarColeccion();
             setRandomHomeBackground();
+            renderCharts();
         }
     </script>
 </body>
