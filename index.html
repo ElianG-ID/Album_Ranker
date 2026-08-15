@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Album Ranker</title>
     
-    <!-- FAVICON: Listo para tu propio archivo -->
+    <!-- FAVICON -->
     <link rel="icon" type="image/png" href="tu-icono.png">
 
     <style>
@@ -15,11 +15,11 @@
             --text-muted: #d0d0d0;
             --card-bg: rgba(0,0,0,0.4);
             --danger: #ff5252;
+            --explicit: #e53935;
         }
         
         body, html {
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             font-family: system-ui, -apple-system, sans-serif;
             color: var(--text-main);
             min-height: 100vh;
@@ -27,7 +27,7 @@
             overflow-x: hidden;
         }
 
-        /* ANIMACIÓN DEL FONDO LÍQUIDO */
+        /* FONDO LÍQUIDO */
         @keyframes liquidFlow {
             0% { transform: scale(1.2) translate(0, 0) rotate(0deg); }
             33% { transform: scale(1.6) translate(-6%, 8%) rotate(4deg); }
@@ -45,7 +45,7 @@
             animation: liquidFlow 18s infinite alternate ease-in-out;
         }
 
-        /* EFECTO DE ONDAS DE AGUA (Estela Suave) */
+        /* ONDAS DE AGUA */
         #ripple-container {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             pointer-events: none; z-index: 2; overflow: hidden;
@@ -66,16 +66,12 @@
             100% { width: 350px; height: 350px; opacity: 0; border-width: 0px; }
         }
 
-        /* TRANSICIÓN SUAVE DE VISTAS */
-        .fade-in {
-            animation: fadeIn 0.4s ease-in-out;
-        }
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* CONTENEDOR PRINCIPAL */
         .container-wrapper {
             position: relative; z-index: 3;
             max-width: 900px; margin: 0 auto; padding: 30px 20px;
@@ -91,7 +87,6 @@
 
         h1 { border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 15px; font-size: 26px; margin-top: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
         
-        /* BÚSQUEDA Y CONTROLES */
         .controls-row { display: flex; gap: 10px; margin-bottom: 25px; }
         input[type="text"], select {
             flex: 1; padding: 14px; border-radius: 12px;
@@ -116,7 +111,6 @@
         .btn-danger { background: rgba(255, 82, 82, 0.2); color: var(--danger); border: 1px solid var(--danger); width: 100%; margin-top: 10px; }
         .btn-danger:hover { background: rgba(255, 82, 82, 0.4); }
 
-        /* REJILLA DE ÁLBUMES */
         .grid-container {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             gap: 20px; margin-bottom: 30px;
@@ -138,22 +132,36 @@
         #homeView { display: block; }
         #albumView { display: none; }
         
-        /* CABECERA DEL ÁLBUM */
-        .album-header { display: flex; gap: 30px; align-items: center; margin-bottom: 30px; }
+        .album-header { display: flex; gap: 30px; align-items: center; margin-bottom: 20px; }
         .album-header img { width: 180px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
         .album-info-text h2 { margin: 0 0 8px 0; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
         .album-info-text h3 { margin: 0 0 5px 0; color: rgba(255,255,255,0.8); font-weight: normal; }
-        .album-metadata { display: block; font-size: 13px; color: var(--text-muted); margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; }
+        .album-metadata { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; flex-wrap: wrap; }
         
-        /* CANCIONES Y NOTAS */
+        /* Insignia Explícita (E) */
+        .explicit-tag {
+            background: var(--explicit); color: white; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 11px;
+        }
+
+        /* TOOLBAR DE BÚSQUEDA RÁPIDA DE CANCIONES Y ACCIONES POR LOTE */
+        .track-toolbar {
+            display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap;
+        }
+        .quick-rate-btn {
+            padding: 6px 12px; font-size: 12px; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* CANCIONES Y AUDIOS */
         .track-item {
-            display: flex; justify-content: space-between; align-items: center; padding: 14px 15px;
+            display: flex; justify-content: space-between; align-items: center; padding: 12px 15px;
             border-bottom: 1px solid rgba(255,255,255,0.15); border-radius: 8px; transition: background 0.2s;
         }
-        .track-item:hover { background: rgba(255,255,255,0.05); }
-        .track-info { display: flex; align-items: center; text-shadow: 0 1px 2px rgba(0,0,0,0.8); flex: 1; padding-right: 15px;}
-        .track-info span { color: var(--text-muted); margin-right: 15px; width: 25px; display: inline-block; font-weight: bold; }
-        
+        .track-item:hover { background: rgba(255,255,255,0.08); }
+        .track-info { display: flex; align-items: center; text-shadow: 0 1px 2px rgba(0,0,0,0.8); flex: 1; padding-right: 15px; cursor: pointer; }
+        .track-info span.num { color: var(--text-muted); margin-right: 12px; width: 22px; display: inline-block; font-weight: bold; }
+        .play-icon { font-size: 12px; opacity: 0.6; margin-left: 8px; transition: opacity 0.2s; }
+        .track-info:hover .play-icon { opacity: 1; color: var(--accent); }
+
         .stepper-control {
             display: flex; align-items: center; background: rgba(0,0,0,0.6);
             border: 1px solid rgba(255,255,255,0.25); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
@@ -184,9 +192,7 @@
         
         #loading { display: none; text-align: center; color: var(--text-muted); padding: 20px; font-size: 18px; }
 
-        .backup-section {
-            margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);
-        }
+        .backup-section { margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
 
         @media (max-width: 600px) {
             .container-wrapper { padding: 15px 10px; }
@@ -249,6 +255,17 @@
 
             <div id="albumView" class="fade-in">
                 <div class="album-header" id="albumHeader"></div>
+
+                <!-- TOOLBAR PARA ÁLBUMES LARGOS -->
+                <div class="track-toolbar">
+                    <input type="text" id="filterTrackInput" placeholder="Filtrar canción..." oninput="filterTracks()" style="padding: 8px 12px; font-size: 14px;">
+                    <span style="font-size: 12px; color: var(--text-muted);">Calificar todas:</span>
+                    <button class="quick-rate-btn" onclick="bulkRate(10)">10</button>
+                    <button class="quick-rate-btn" onclick="bulkRate(8)">8</button>
+                    <button class="quick-rate-btn" onclick="bulkRate(5)">5</button>
+                    <button class="quick-rate-btn" onclick="bulkRate(0)">Limpiar</button>
+                </div>
+
                 <div id="trackList"></div>
                 
                 <div class="score-panel">
@@ -269,13 +286,18 @@
         </div>
     </div>
 
+    <!-- REPRODUCTOR OCULTO PARA PREVIEWS -->
+    <audio id="audioPreview" style="display:none;"></audio>
+
     <script>
         let savedRatings = JSON.parse(localStorage.getItem('myAlbumRatings')) || {};
         let myCollection = JSON.parse(localStorage.getItem('myCollectionInfo')) || {};
         let currentAlbumData = {};
         let currentTotalTracksCount = 0;
+        let loadedTracksCache = [];
+        let currentPlayingAudio = null;
 
-        // LÓGICA DE ESTELA (Ondas Suaves y Espaciadas)
+        // ONDAS LÍQUIDAS
         let lastRippleTime = 0;
         document.addEventListener('pointermove', (e) => {
             const now = Date.now();
@@ -307,17 +329,14 @@
         }
 
         function exportData() {
-            const dataToExport = {
-                ratings: savedRatings,
-                collection: myCollection
-            };
+            const dataToExport = { ratings: savedRatings, collection: myCollection };
             const jsonStr = JSON.stringify(dataToExport, null, 2);
             const blob = new Blob([jsonStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'Mis-Albumes-Calificados.json';
+            a.download = 'AlbumRanker-Respaldo.json';
             document.body.appendChild(a);
             a.click();
             
@@ -383,8 +402,8 @@
             document.getElementById('dynamic-bg').style.backgroundImage = 'none';
 
             try {
-                // MODIFICACIÓN: explicit=Yes y limit=25
-                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=album&limit=25&explicit=Yes`;
+                // PARAMETROS CORREGIDOS: explicit=Yes & limit=50 para abarcar todo el catálogo
+                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=album&explicit=Yes&limit=50`;
                 const data = await fetchAppleMusic(url);
                 
                 document.getElementById('loading').style.display = 'none';
@@ -403,7 +422,7 @@
                         <strong>${album.collectionName}</strong>
                         <span>${album.artistName}</span>
                     `;
-                    card.onclick = () => loadAlbumDetails(album.collectionId, coverUrl, album.collectionName, album.artistName, album.releaseDate);
+                    card.onclick = () => loadAlbumDetails(album.collectionId, coverUrl, album.collectionName, album.artistName, album.releaseDate, album.collectionExplicitness);
                     document.getElementById('searchResults').appendChild(card);
                 });
             } catch (error) {
@@ -411,11 +430,12 @@
             }
         }
 
-        async function loadAlbumDetails(albumId, coverUrl, albumName, artistName, releaseDateApi) {
+        async function loadAlbumDetails(albumId, coverUrl, albumName, artistName, releaseDateApi, explicitness) {
             currentAlbumData = { id: albumId, cover: coverUrl, name: albumName, artist: artistName };
 
             document.getElementById('homeView').style.display = 'none';
             document.getElementById('albumView').style.display = 'block';
+            document.getElementById('filterTrackInput').value = '';
             document.getElementById('finalScore').innerText = '-';
             document.getElementById('finalScore').style.color = "white";
             
@@ -424,7 +444,6 @@
             btnGuardar.style.background = "var(--accent)";
             btnGuardar.style.color = "#000";
 
-            // Mostrar u ocultar botón de eliminar si ya está en la colección
             const btnEliminar = document.getElementById('btnEliminar');
             btnEliminar.style.display = myCollection[albumId] ? 'block' : 'none';
 
@@ -441,11 +460,15 @@
                 
                 const albumInfo = data.results[0]; 
                 const tracks = data.results.filter(item => item.wrapperType === 'track');
+                loadedTracksCache = tracks; // Guardamos en cache para filtrado rápido
                 currentTotalTracksCount = tracks.length;
                 
                 const dateToUse = releaseDateApi || albumInfo.releaseDate;
                 const releaseYear = dateToUse ? new Date(dateToUse).getFullYear() : 'Desconocido';
                 
+                const isExplicit = (explicitness === 'explicit' || albumInfo.collectionExplicitness === 'explicit');
+                const explicitBadgeHtml = isExplicit ? `<span class="explicit-tag" title="Contenido Explícito">E</span>` : '';
+
                 const totalMs = tracks.reduce((sum, track) => sum + (track.trackTimeMillis || 0), 0);
                 const totalMins = Math.floor(totalMs / 60000);
                 const totalSecs = Math.floor((totalMs % 60000) / 1000);
@@ -456,43 +479,100 @@
                     <div class="album-info-text">
                         <h2>${albumName}</h2>
                         <h3>${artistName}</h3>
-                        <span class="album-metadata">
+                        <div class="album-metadata">
+                            ${explicitBadgeHtml}
                             <strong>Lanzamiento:</strong> ${releaseYear} &nbsp;|&nbsp; 
                             <strong>Pistas:</strong> ${tracks.length} &nbsp;|&nbsp; 
                             <strong>Duración:</strong> ${durationStr}
-                        </span>
+                        </div>
                     </div>
                 `;
 
-                document.getElementById('trackList').innerHTML = '';
-
-                tracks.forEach((track, index) => {
-                    const trackId = track.trackId;
-                    const savedScore = savedRatings[albumId][trackId];
-                    const displayValue = (savedScore !== undefined && typeof savedScore === 'number') ? savedScore.toFixed(1) : '-';
-
-                    const trackDiv = document.createElement('div');
-                    trackDiv.className = 'track-item';
-                    
-                    trackDiv.innerHTML = `
-                        <div class="track-info">
-                            <span>${track.trackNumber || index + 1}</span> 
-                            ${track.trackName}
-                        </div>
-                        <div class="stepper-control">
-                            <button class="step-btn" onclick="adjustRating(${albumId}, '${trackId}', -0.5)">-</button>
-                            <span class="step-value" id="val-${trackId}">${displayValue}</span>
-                            <button class="step-btn" onclick="adjustRating(${albumId}, '${trackId}', 0.5)">+</button>
-                        </div>
-                    `;
-                    document.getElementById('trackList').appendChild(trackDiv);
-                });
-                
+                renderTrackList(tracks);
                 calculateAverage();
 
             } catch (error) {
                 document.getElementById('trackList').innerHTML = '<p style="text-align:center; color:#ff6b6b;">Hubo un problema al cargar las canciones.</p>';
             }
+        }
+
+        // DIBUJAR LISTA DE CANCIONES
+        function renderTrackList(tracksToRender) {
+            const albumId = currentAlbumData.id;
+            const container = document.getElementById('trackList');
+            container.innerHTML = '';
+
+            tracksToRender.forEach((track, index) => {
+                const trackId = track.trackId;
+                const savedScore = savedRatings[albumId][trackId];
+                const displayValue = (savedScore !== undefined && typeof savedScore === 'number') ? savedScore.toFixed(1) : '-';
+
+                const trackDiv = document.createElement('div');
+                trackDiv.className = 'track-item';
+                
+                trackDiv.innerHTML = `
+                    <div class="track-info" onclick="playPreview('${track.previewUrl}', this)">
+                        <span class="num">${track.trackNumber || index + 1}</span> 
+                        <div>
+                            ${track.trackName}
+                            <span class="play-icon">▶ Escuchar</span>
+                        </div>
+                    </div>
+                    <div class="stepper-control">
+                        <button class="step-btn" onclick="adjustRating(${albumId}, '${trackId}', -0.5)">-</button>
+                        <span class="step-value" id="val-${trackId}">${displayValue}</span>
+                        <button class="step-btn" onclick="adjustRating(${albumId}, '${trackId}', 0.5)">+</button>
+                    </div>
+                `;
+                container.appendChild(trackDiv);
+            });
+        }
+
+        // QoL: REPRODUCTOR DE MUESTRA (PREVIEW DE 30 SEGUNDOS)
+        function playPreview(previewUrl, element) {
+            if (!previewUrl) return;
+            const audio = document.getElementById('audioPreview');
+
+            if (currentPlayingAudio === previewUrl && !audio.paused) {
+                audio.pause();
+                currentPlayingAudio = null;
+                element.querySelector('.play-icon').innerText = '▶ Escuchar';
+                return;
+            }
+
+            document.querySelectorAll('.play-icon').forEach(el => el.innerText = '▶ Escuchar');
+
+            audio.src = previewUrl;
+            audio.play();
+            currentPlayingAudio = previewUrl;
+            element.querySelector('.play-icon').innerText = '⏸ Pausar';
+
+            audio.onended = () => {
+                element.querySelector('.play-icon').innerText = '▶ Escuchar';
+                currentPlayingAudio = null;
+            };
+        }
+
+        // QoL: CALIFICAR TODO EL ÁLBUM POR LOTE
+        function bulkRate(targetScore) {
+            const albumId = currentAlbumData.id;
+            loadedTracksCache.forEach(track => {
+                if (targetScore === 0) {
+                    delete savedRatings[albumId][track.trackId];
+                } else {
+                    savedRatings[albumId][track.trackId] = targetScore;
+                }
+            });
+            localStorage.setItem('myAlbumRatings', JSON.stringify(savedRatings));
+            renderTrackList(loadedTracksCache);
+            calculateAverage();
+        }
+
+        // QoL: FILTRAR CANCIONES
+        function filterTracks() {
+            const query = document.getElementById('filterTrackInput').value.toLowerCase();
+            const filtered = loadedTracksCache.filter(t => t.trackName.toLowerCase().includes(query));
+            renderTrackList(filtered);
         }
 
         function adjustRating(albumId, trackId, delta) {
@@ -506,11 +586,13 @@
             
             if (current < 0) {
                 delete savedRatings[albumId][trackId];
-                document.getElementById(`val-${trackId}`).innerText = '-';
+                const el = document.getElementById(`val-${trackId}`);
+                if (el) el.innerText = '-';
             } else {
                 if (current > 10) current = 10;
                 savedRatings[albumId][trackId] = current;
-                document.getElementById(`val-${trackId}`).innerText = current.toFixed(1);
+                const el = document.getElementById(`val-${trackId}`);
+                if (el) el.innerText = current.toFixed(1);
             }
             
             localStorage.setItem('myAlbumRatings', JSON.stringify(savedRatings));
@@ -591,7 +673,6 @@
             document.getElementById('btnEliminar').style.display = 'block';
         }
 
-        // QoL: ELIMINAR ÁLBUM DE LA COLECCIÓN
         function eliminarDeColeccion() {
             if (confirm(`¿Estás seguro de que deseas eliminar "${currentAlbumData.name}" de tu colección?`)) {
                 delete myCollection[currentAlbumData.id];
@@ -650,6 +731,10 @@
         }
 
         function cerrarAlbum() {
+            const audio = document.getElementById('audioPreview');
+            if (audio) audio.pause();
+            currentPlayingAudio = null;
+
             document.getElementById('albumView').style.display = 'none';
             document.getElementById('homeView').style.display = 'block';
             document.getElementById('searchInput').value = '';
