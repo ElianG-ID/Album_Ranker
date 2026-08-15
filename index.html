@@ -28,7 +28,7 @@
             overflow-x: hidden;
         }
 
-        /* ANIMACIÓN BASE DEL FONDO LÍQUIDO */
+        /* FONDO LÍQUIDO */
         @keyframes liquidFlow {
             0% { transform: scale(1.2) translate(0, 0) rotate(0deg); }
             33% { transform: scale(1.6) translate(-6%, 8%) rotate(4deg); }
@@ -145,6 +145,7 @@
 
         #homeView { display: block; }
         #albumView { display: none; }
+        #top100View { display: none; }
         
         .album-header { display: flex; gap: 30px; align-items: center; margin-bottom: 20px; }
         .album-header img { width: 180px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
@@ -242,10 +243,12 @@
         .chart-section h3 { margin-top: 0; font-size: 15px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
         
         .chart-container {
-            display: flex; align-items: flex-end; gap: 4px; height: 120px;
+            display: flex; align-items: flex-end; gap: 4px; height: 100px;
             padding-top: 15px; border-bottom: 1px solid rgba(255,255,255,0.2);
             overflow: hidden;
         }
+        .chart-row-title { font-size: 11px; color: var(--accent); margin-top: 12px; font-weight: bold; }
+
         .chart-bar-wrapper {
             flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;
         }
@@ -255,16 +258,14 @@
         }
         .chart-bar:hover { opacity: 1; background: #d0a8ff; }
         
-        /* CORRECCIÓN DE DESFASE EN TEXTO */
         .chart-label { 
-            font-size: 9px; 
+            font-size: 8px; 
             color: var(--text-muted); 
-            margin-top: 6px; 
+            margin-top: 4px; 
             text-align: center; 
             white-space: nowrap; 
             width: 100%;
             overflow: hidden;
-            text-overflow: ellipsis;
         }
 
         .genre-legend-container {
@@ -275,6 +276,21 @@
             padding: 4px 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);
         }
         .genre-color-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+        /* ESTILOS VISTA TOP 100 */
+        .top100-list { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+        .top100-item {
+            display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.4);
+            padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer; transition: transform 0.2s;
+        }
+        .top100-item:hover { transform: translateX(5px); background: rgba(255,255,255,0.05); }
+        .top100-rank { font-size: 18px; font-weight: bold; color: var(--gold); min-width: 35px; }
+        .top100-img { width: 55px; height: 55px; border-radius: 8px; object-fit: cover; }
+        .top100-info { flex: 1; overflow: hidden; }
+        .top100-title { font-weight: bold; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .top100-sub { font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .top100-score { font-size: 20px; font-weight: bold; padding: 4px 12px; border-radius: 20px; color: #000; }
 
         .backup-section { margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
 
@@ -287,7 +303,6 @@
             .track-item { flex-direction: column; align-items: flex-start; gap: 12px; }
             .stepper-control { align-self: flex-end; }
             .grid-container { grid-template-columns: repeat(2, 1fr); gap: 10px;}
-            .chart-label { font-size: 8px; }
         }
     </style>
 </head>
@@ -333,9 +348,14 @@
                         <div id="albumsChart" class="chart-container"></div>
                     </div>
 
+                    <!-- GRÁFICA DE CANCIONES DE 0.5 EN 0.5 EN 2 HILERAS -->
                     <div class="chart-section">
                         <h3>Calificaciones de Canciones</h3>
-                        <div id="songsChart" class="chart-container"></div>
+                        <div class="chart-row-title">Rango 0.0 - 5.0</div>
+                        <div id="songsChartRow1" class="chart-container"></div>
+                        
+                        <div class="chart-row-title">Rango 5.5 - 10.0</div>
+                        <div id="songsChartRow2" class="chart-container"></div>
                     </div>
 
                     <div class="chart-section">
@@ -364,6 +384,9 @@
 
                     <div id="savedAlbumsGrid" class="grid-container"></div>
 
+                    <!-- BOTÓN IR A TOP 100 -->
+                    <button onclick="openTop100View()" style="width: 100%; margin-top: 20px; background: rgba(187, 134, 252, 0.15); border-color: var(--accent); color: var(--accent);">🏆 Ver Top 100 Álbumes</button>
+
                     <div class="backup-section">
                         <h2 style="font-size: 16px; color: var(--text-muted); margin-bottom: 15px;">Respaldo y Recuperación</h2>
                         <div class="controls-row">
@@ -375,6 +398,7 @@
                 </div>
             </div>
 
+            <!-- VISTA DETALLE ÁLBUM -->
             <div id="albumView" class="fade-in">
                 <div class="album-header" id="albumHeader"></div>
 
@@ -404,6 +428,13 @@
                 <button id="btnGuardar" class="btn-primary" onclick="guardarEnColeccion()">Guardar en mi colección</button>
                 <button id="btnEliminar" class="btn-danger" style="display:none;" onclick="eliminarDeColeccion()">Eliminar de mi colección</button>
                 <button onclick="cerrarAlbum()" style="margin-top: 15px; width: 100%; padding: 16px;">Volver a inicio</button>
+            </div>
+
+            <!-- VISTA TOP 100 ÁLBUMES -->
+            <div id="top100View" class="fade-in">
+                <h2>🏆 Top 100 Álbumes de la Colección</h2>
+                <div id="top100List" class="top100-list"></div>
+                <button onclick="closeTop100View()" style="margin-top: 25px; width: 100%; padding: 16px;">Volver a inicio</button>
             </div>
         </div>
     </div>
@@ -590,6 +621,7 @@
             currentAlbumData = { id: albumId, cover: coverUrl, name: albumName, artist: artistName, genre: genreApi || 'Música' };
 
             document.getElementById('homeView').style.display = 'none';
+            document.getElementById('top100View').style.display = 'none';
             document.getElementById('albumView').style.display = 'block';
             document.getElementById('filterTrackInput').value = '';
             document.getElementById('finalScore').innerText = '-';
@@ -661,7 +693,6 @@
             const container = document.getElementById('trackList');
             container.innerHTML = '';
 
-            // CALCULAR MÁXIMA PUNTUACIÓN PARA LA ESTRELLA (TOP TRACK / CANCIÓN FAVORITA)
             let maxScoreInAlbum = -1;
             Object.keys(savedRatings[albumId] || {}).forEach(k => {
                 if (k !== '_notes' && typeof savedRatings[albumId][k] === 'number') {
@@ -677,8 +708,6 @@
                 const displayValue = (savedScore !== undefined && typeof savedScore === 'number') ? savedScore.toFixed(1) : '-';
 
                 const isHighlight = (typeof savedScore === 'number' && savedScore >= 9.0);
-                
-                // CONDICIONAL PARA AÑADIR LA ESTRELLA A LAS NOTAS MÁS ALTAS
                 const isTopTrack = (typeof savedScore === 'number' && savedScore > 0 && savedScore === maxScoreInAlbum);
                 const starHtml = isTopTrack ? `<span class="star-icon" title="Top Canción Favorita">★</span>` : '';
 
@@ -757,7 +786,6 @@
             
             localStorage.setItem('myAlbumRatings', JSON.stringify(savedRatings));
             
-            // INDICA CAMBIOS SIN GUARDAR EN EL BOTÓN
             const btnGuardar = document.getElementById('btnGuardar');
             btnGuardar.innerText = "Guardar cambios en mi colección *";
             btnGuardar.style.background = "var(--accent)";
@@ -934,6 +962,7 @@
             });
         }
 
+        // GENERACIÓN DE GRÁFICAS (MANTENIENDO PRECISIÓN DE 0.5 EN 2 HILERAS)
         function renderCharts() {
             const albums = Object.values(myCollection);
             
@@ -988,29 +1017,48 @@
                 albumsChartContainer.appendChild(wrapper);
             });
 
-            // 2. GRÁFICA DE CANCIONES (1 AL 10 - FORMATO CORREGIDO PARA PANTALLAS CHICAS)
-            const songBins10 = new Array(10).fill(0);
+            // 2. GRÁFICA DE CANCIONES DE 0.5 EN 0.5 DIVIDIDA EN 2 HILERAS
+            const songBins = new Array(21).fill(0);
             allSongRatings.forEach(s => {
-                let binIndex = Math.min(Math.floor(s), 9);
-                if (s === 10) binIndex = 9;
-                songBins10[binIndex]++;
+                let binIndex = Math.min(Math.floor(s * 2), 20);
+                songBins[binIndex]++;
             });
 
-            const maxSongBin = Math.max(...songBins10, 1);
-            const songsChartContainer = document.getElementById('songsChart');
-            songsChartContainer.innerHTML = '';
+            const maxSongBin = Math.max(...songBins, 1);
 
-            const songLabels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
-            songBins10.forEach((count, i) => {
+            // HILERA 1: 0.0 a 5.0 (Índices 0 a 10)
+            const row1Container = document.getElementById('songsChartRow1');
+            row1Container.innerHTML = '';
+            for (let i = 0; i <= 10; i++) {
+                const valStr = (i * 0.5).toFixed(1);
+                const count = songBins[i];
                 const heightPct = (count / maxSongBin) * 100;
+                
                 const wrapper = document.createElement('div');
                 wrapper.className = 'chart-bar-wrapper';
                 wrapper.innerHTML = `
-                    <div class="chart-bar" style="height: ${heightPct}%;" title="${count} canciones"></div>
-                    <span class="chart-label">${songLabels[i]}</span>
+                    <div class="chart-bar" style="height: ${heightPct}%;" title="${count} canciones con nota ${valStr}"></div>
+                    <span class="chart-label">${valStr}</span>
                 `;
-                songsChartContainer.appendChild(wrapper);
-            });
+                row1Container.appendChild(wrapper);
+            }
+
+            // HILERA 2: 5.5 a 10.0 (Índices 11 a 20)
+            const row2Container = document.getElementById('songsChartRow2');
+            row2Container.innerHTML = '';
+            for (let i = 11; i <= 20; i++) {
+                const valStr = (i * 0.5).toFixed(1);
+                const count = songBins[i];
+                const heightPct = (count / maxSongBin) * 100;
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = 'chart-bar-wrapper';
+                wrapper.innerHTML = `
+                    <div class="chart-bar" style="height: ${heightPct}%;" title="${count} canciones con nota ${valStr}"></div>
+                    <span class="chart-label">${valStr}</span>
+                `;
+                row2Container.appendChild(wrapper);
+            }
 
             // 3. GRÁFICA DE GÉNEROS MUSICALES
             const genresBarChart = document.getElementById('genresBarChart');
@@ -1044,6 +1092,51 @@
             });
         }
 
+        // LÓGICA VISTA TOP 100
+        function openTop100View() {
+            document.getElementById('homeView').style.display = 'none';
+            document.getElementById('top100View').style.display = 'block';
+
+            const top100List = document.getElementById('top100List');
+            top100List.innerHTML = '';
+
+            let sortedAlbums = Object.values(myCollection).sort((a, b) => parseFloat(b.score) - parseFloat(a.score));
+            sortedAlbums = sortedAlbums.slice(0, 100);
+
+            if (sortedAlbums.length === 0) {
+                top100List.innerHTML = '<p style="text-align:center; color:var(--text-muted);">No hay álbumes suficientes en tu colección.</p>';
+                return;
+            }
+
+            sortedAlbums.forEach((album, index) => {
+                const rank = index + 1;
+                let rankSymbol = `#${rank}`;
+                if (rank === 1) rankSymbol = '🥇';
+                else if (rank === 2) rankSymbol = '🥈';
+                else if (rank === 3) rankSymbol = '🥉';
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'top100-item';
+                itemDiv.onclick = () => loadAlbumDetails(album.id, album.cover, album.name, album.artist, null, null, album.genre);
+
+                itemDiv.innerHTML = `
+                    <div class="top100-rank">${rankSymbol}</div>
+                    <img class="top100-img" src="${album.cover}" alt="Portada">
+                    <div class="top100-info">
+                        <div class="top100-title">${album.name}</div>
+                        <div class="top100-sub">${album.artist} &bull; ${album.genre || 'Música'}</div>
+                    </div>
+                    <div class="top100-score" style="background: ${album.color || '#69f0ae'}">${album.score}</div>
+                `;
+                top100List.appendChild(itemDiv);
+            });
+        }
+
+        function closeTop100View() {
+            document.getElementById('top100View').style.display = 'none';
+            document.getElementById('homeView').style.display = 'block';
+        }
+
         function cerrarAlbum() {
             const audio = document.getElementById('audioPreview');
             if (audio) audio.pause();
@@ -1051,6 +1144,7 @@
             document.getElementById('dynamic-bg').classList.remove('audio-active');
 
             document.getElementById('albumView').style.display = 'none';
+            document.getElementById('top100View').style.display = 'none';
             document.getElementById('homeView').style.display = 'block';
             document.getElementById('searchInput').value = '';
             document.getElementById('searchResults').innerHTML = '';
