@@ -28,7 +28,7 @@
             overflow-x: hidden;
         }
 
-        /* FONDO LÍQUIDO */
+        /* ANIMACIÓN BASE DEL FONDO LÍQUIDO */
         @keyframes liquidFlow {
             0% { transform: scale(1.2) translate(0, 0) rotate(0deg); }
             33% { transform: scale(1.6) translate(-6%, 8%) rotate(4deg); }
@@ -36,14 +36,28 @@
             100% { transform: scale(1.2) translate(0, 0) rotate(0deg); }
         }
 
+        /* ANIMACIÓN ACTIVADA CON MÚSICA (Más rápida e intensa) */
+        @keyframes musicPulseFlow {
+            0% { transform: scale(1.3) translate(0, 0) rotate(0deg); filter: blur(30px) brightness(0.85) saturate(300%); }
+            25% { transform: scale(1.7) translate(-8%, 10%) rotate(8deg); filter: blur(25px) brightness(1) saturate(350%); }
+            50% { transform: scale(1.4) translate(10%, -8%) rotate(-6deg); filter: blur(35px) brightness(0.8) saturate(280%); }
+            75% { transform: scale(1.8) translate(-5%, -5%) rotate(5deg); filter: blur(20px) brightness(1.1) saturate(380%); }
+            100% { transform: scale(1.3) translate(0, 0) rotate(0deg); filter: blur(30px) brightness(0.85) saturate(300%); }
+        }
+
         #dynamic-bg {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
             background-size: cover; background-position: center;
             filter: blur(40px) brightness(0.6) saturate(220%);
-            z-index: 1; transition: background-image 1.5s ease-in-out;
+            z-index: 1; transition: all 1s ease-in-out;
             pointer-events: none;
             animation: liquidFlow 18s infinite alternate ease-in-out;
+        }
+
+        /* Clase aplicada cuando se reproduce música */
+        #dynamic-bg.audio-active {
+            animation: musicPulseFlow 4s infinite alternate ease-in-out !important;
         }
 
         /* ONDAS DE AGUA */
@@ -155,7 +169,6 @@
         }
         .track-item:hover { background: rgba(255,255,255,0.08); }
         
-        /* RESALTADO DE CANCIÓN DESTACADA (>= 9.0) */
         .track-item.highlighted-track {
             background: rgba(255, 215, 0, 0.12);
             border-left: 3px solid var(--gold);
@@ -208,7 +221,7 @@
         #loading { display: none; text-align: center; color: var(--text-muted); padding: 20px; font-size: 18px; }
         #cancelSearchBtn { display: none; width: 100%; margin-bottom: 20px; background: rgba(255,255,255,0.1); }
 
-        /* ESTILOS DE ESTADÍSTICAS Y GRÁFICAS ESTILO LETTERBOXD */
+        /* ESTADÍSTICAS Y GRÁFICAS */
         .stats-summary {
             display: flex; justify-content: space-around; background: rgba(0,0,0,0.3);
             border-radius: 12px; padding: 15px; margin-top: 20px; margin-bottom: 20px;
@@ -224,7 +237,7 @@
         .chart-section h3 { margin-top: 0; font-size: 15px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
         
         .chart-container {
-            display: flex; align-items: flex-end; gap: 4px; height: 120px;
+            display: flex; align-items: flex-end; gap: 6px; height: 120px;
             padding-top: 15px; border-bottom: 1px solid rgba(255,255,255,0.2);
         }
         .chart-bar-wrapper {
@@ -235,7 +248,17 @@
             transition: height 0.5s ease; min-height: 2px; opacity: 0.85;
         }
         .chart-bar:hover { opacity: 1; background: #d0a8ff; }
-        .chart-label { font-size: 9px; color: var(--text-muted); margin-top: 6px; text-align: center; }
+        .chart-label { font-size: 10px; color: var(--text-muted); margin-top: 6px; text-align: center; }
+
+        /* ESTILOS DE LA NUEVA GRÁFICA DE GÉNEROS */
+        .genre-legend-container {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; justify-content: center;
+        }
+        .genre-legend-item {
+            display: flex; align-items: center; gap: 6px; font-size: 12px; background: rgba(0,0,0,0.3);
+            padding: 4px 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);
+        }
+        .genre-color-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 
         .backup-section { margin-top: 40px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
 
@@ -248,7 +271,6 @@
             .track-item { flex-direction: column; align-items: flex-start; gap: 12px; }
             .stepper-control { align-self: flex-end; }
             .grid-container { grid-template-columns: repeat(2, 1fr); gap: 10px;}
-            .chart-label { font-size: 8px; transform: rotate(-45deg); margin-top: 10px; }
         }
     </style>
 </head>
@@ -290,16 +312,23 @@
                         </div>
                     </div>
 
-                    <!-- GRÁFICA DE ÁLBUMES (LETTERBOXD STYLE - 10 EN 10) -->
+                    <!-- GRÁFICA DE ÁLBUMES -->
                     <div class="chart-section">
-                        <h3>Distribución de Calificaciones de Álbumes</h3>
+                        <h3>Calificaciones de Álbumes</h3>
                         <div id="albumsChart" class="chart-container"></div>
                     </div>
 
-                    <!-- GRÁFICA DE CANCIONES (LETTERBOXD STYLE - 5 EN 5) -->
+                    <!-- GRÁFICA DE CANCIONES (DEL 1 AL 10 - OPTIMIZADA PANTALLA CHICA) -->
                     <div class="chart-section">
-                        <h3>Distribución de Calificaciones de Canciones</h3>
+                        <h3>Calificaciones de Canciones</h3>
                         <div id="songsChart" class="chart-container"></div>
+                    </div>
+
+                    <!-- NUEVA GRÁFICA DE GÉNEROS MUSICALES -->
+                    <div class="chart-section">
+                        <h3>Distribución de Géneros Musicales</h3>
+                        <div id="genresBarChart" class="chart-container" style="height: 100px;"></div>
+                        <div id="genresLegend" class="genre-legend-container"></div>
                     </div>
 
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); margin-top: 30px; margin-bottom: 15px; padding-bottom: 10px; flex-wrap: wrap; gap: 10px;">
@@ -308,6 +337,9 @@
                     
                     <div class="controls-row">
                         <input type="text" id="filterCollection" placeholder="Filtrar por artista o álbum..." oninput="renderizarColeccion()">
+                        <select id="genreFilter" onchange="renderizarColeccion()">
+                            <option value="all">Todos los géneros</option>
+                        </select>
                         <select id="sortCollection" onchange="renderizarColeccion()">
                             <option value="recent">Agregado recientemente</option>
                             <option value="alpha-album">A-Z (Álbum)</option>
@@ -372,6 +404,8 @@
         let currentTotalTracksCount = 0;
         let loadedTracksCache = [];
         let currentPlayingAudio = null;
+
+        const genrePalette = ['#bb86fc', '#03dac6', '#ff4081', '#ffd700', '#7c4dff', '#69f0ae', '#ff6e40', '#18ffff', '#ff5252', '#e040fb'];
 
         // ONDAS LÍQUIDAS
         let lastRippleTime = 0;
@@ -470,7 +504,6 @@
             });
         }
 
-        // BÚSQUEDA DEFINITIVA POR CANCIONES PARA GARANTIZAR CONTENIDO EXPLÍCITO SINO
         async function searchAlbums() {
             const query = document.getElementById('searchInput').value;
             if (!query) return;
@@ -482,7 +515,6 @@
             document.getElementById('dynamic-bg').style.backgroundImage = 'none';
 
             try {
-                // Buscamos canciones directamente (entity=song) lo cual NUNCA filtra contenido explícito
                 const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&explicit=Yes&limit=100`;
                 const data = await fetchAppleMusic(url);
                 
@@ -493,7 +525,6 @@
                     return;
                 }
 
-                // Agrupamos por álbum para evitar repetidos
                 const albumMap = new Map();
                 data.results.forEach(song => {
                     if (song.collectionId && !albumMap.has(song.collectionId)) {
@@ -503,7 +534,8 @@
                             artist: song.artistName,
                             cover: song.artworkUrl100.replace('100x100bb', '400x400bb'),
                             releaseDate: song.releaseDate,
-                            explicitness: song.collectionExplicitness || song.trackExplicitness
+                            explicitness: song.collectionExplicitness || song.trackExplicitness,
+                            genre: song.primaryGenreName || 'Música'
                         });
                     }
                 });
@@ -516,7 +548,7 @@
                         <strong>${album.name}</strong>
                         <span>${album.artist}</span>
                     `;
-                    card.onclick = () => loadAlbumDetails(album.id, album.cover, album.name, album.artist, album.releaseDate, album.explicitness);
+                    card.onclick = () => loadAlbumDetails(album.id, album.cover, album.name, album.artist, album.releaseDate, album.explicitness, album.genre);
                     document.getElementById('searchResults').appendChild(card);
                 });
             } catch (error) {
@@ -532,8 +564,8 @@
             setRandomHomeBackground();
         }
 
-        async function loadAlbumDetails(albumId, coverUrl, albumName, artistName, releaseDateApi, explicitness) {
-            currentAlbumData = { id: albumId, cover: coverUrl, name: albumName, artist: artistName };
+        async function loadAlbumDetails(albumId, coverUrl, albumName, artistName, releaseDateApi, explicitness, genreApi) {
+            currentAlbumData = { id: albumId, cover: coverUrl, name: albumName, artist: artistName, genre: genreApi || 'Música' };
 
             document.getElementById('homeView').style.display = 'none';
             document.getElementById('albumView').style.display = 'block';
@@ -568,6 +600,9 @@
                 const dateToUse = releaseDateApi || albumInfo.releaseDate;
                 const releaseYear = dateToUse ? new Date(dateToUse).getFullYear() : 'Desconocido';
                 
+                const genreName = genreApi || albumInfo.primaryGenreName || 'Música';
+                currentAlbumData.genre = genreName;
+
                 const isExplicit = (explicitness === 'explicit' || albumInfo.collectionExplicitness === 'explicit' || tracks.some(t => t.trackExplicitness === 'explicit'));
                 const explicitBadgeHtml = isExplicit ? `<span class="explicit-tag" title="Contenido Explícito">E</span>` : '';
 
@@ -576,6 +611,7 @@
                 const totalSecs = Math.floor((totalMs % 60000) / 1000);
                 const durationStr = totalMins > 0 ? `${totalMins} min ${totalSecs} s` : 'Duración desconocida';
 
+                // INCORPORACIÓN DEL GÉNERO MUSICAL
                 document.getElementById('albumHeader').innerHTML = `
                     <img src="${coverUrl}" alt="Portada">
                     <div class="album-info-text">
@@ -583,7 +619,8 @@
                         <h3>${artistName}</h3>
                         <div class="album-metadata">
                             ${explicitBadgeHtml}
-                            <strong>Lanzamiento:</strong> ${releaseYear} &nbsp;|&nbsp; 
+                            <strong>Género:</strong> ${genreName} &nbsp;|&nbsp;
+                            <strong>Año:</strong> ${releaseYear} &nbsp;|&nbsp; 
                             <strong>Pistas:</strong> ${tracks.length} &nbsp;|&nbsp; 
                             <strong>Duración:</strong> ${durationStr}
                         </div>
@@ -609,7 +646,7 @@
                 const displayValue = (savedScore !== undefined && typeof savedScore === 'number') ? savedScore.toFixed(1) : '-';
 
                 const trackDiv = document.createElement('div');
-                // CAMBIO: Resaltado ampliado a calificaciones >= 9.0
+                // RESALTADO DE CANCIÓN DESTACADA (>= 9.0)
                 const isHighlight = (typeof savedScore === 'number' && savedScore >= 9.0);
                 trackDiv.className = `track-item ${isHighlight ? 'highlighted-track' : ''}`;
                 
@@ -633,14 +670,17 @@
             });
         }
 
+        // QoL: REPRODUCTOR CON ACTIVACIÓN DE FONDO DINÁMICO
         function playPreview(previewUrl, element) {
             if (!previewUrl) return;
             const audio = document.getElementById('audioPreview');
+            const bg = document.getElementById('dynamic-bg');
 
             if (currentPlayingAudio === previewUrl && !audio.paused) {
                 audio.pause();
                 currentPlayingAudio = null;
                 element.querySelector('.play-icon').innerText = '▶ Escuchar';
+                bg.classList.remove('audio-active'); // Vuelve al estado normal
                 return;
             }
 
@@ -650,10 +690,12 @@
             audio.play();
             currentPlayingAudio = previewUrl;
             element.querySelector('.play-icon').innerText = '⏸ Pausar';
+            bg.classList.add('audio-active'); // Activa la aceleración del fondo
 
             audio.onended = () => {
                 element.querySelector('.play-icon').innerText = '▶ Escuchar';
                 currentPlayingAudio = null;
+                bg.classList.remove('audio-active');
             };
         }
 
@@ -737,6 +779,7 @@
                 if (myCollection[albumId]) {
                     myCollection[albumId].score = formattedAverage;
                     myCollection[albumId].color = scoreColor;
+                    myCollection[albumId].genre = currentAlbumData.genre;
                     localStorage.setItem('myCollectionInfo', JSON.stringify(myCollection));
                 }
             }
@@ -757,6 +800,7 @@
                 cover: currentAlbumData.cover,
                 name: currentAlbumData.name,
                 artist: currentAlbumData.artist,
+                genre: currentAlbumData.genre || 'Música',
                 score: currentScore,
                 color: scoreColor,
                 timestamp: Date.now() 
@@ -771,6 +815,7 @@
             
             document.getElementById('btnEliminar').style.display = 'block';
             renderCharts();
+            updateGenreDropdown();
         }
 
         function eliminarDeColeccion() {
@@ -781,11 +826,26 @@
             }
         }
 
+        function updateGenreDropdown() {
+            const dropdown = document.getElementById('genreFilter');
+            const genres = new Set();
+            Object.values(myCollection).forEach(a => { if (a.genre) genres.add(a.genre); });
+            
+            dropdown.innerHTML = '<option value="all">Todos los géneros</option>';
+            genres.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g;
+                opt.innerText = g;
+                dropdown.appendChild(opt);
+            });
+        }
+
         function renderizarColeccion() {
             const grid = document.getElementById('savedAlbumsGrid');
             grid.innerHTML = '';
             
             let albums = Object.values(myCollection);
+            updateGenreDropdown();
             
             if (albums.length === 0) {
                 grid.innerHTML = '<p style="grid-column: 1/-1; color: var(--text-muted);">Tu colección está vacía. Busca y guarda tu primer álbum.</p>';
@@ -798,6 +858,11 @@
                     a.name.toLowerCase().includes(filterText) || 
                     a.artist.toLowerCase().includes(filterText)
                 );
+            }
+
+            const selectedGenre = document.getElementById('genreFilter').value;
+            if (selectedGenre && selectedGenre !== 'all') {
+                albums = albums.filter(a => a.genre === selectedGenre);
             }
 
             const sortMode = document.getElementById('sortCollection').value;
@@ -825,29 +890,29 @@
                     <strong>${album.name}</strong>
                     <span>${album.artist}</span>
                 `;
-                card.onclick = () => loadAlbumDetails(album.id, album.cover, album.name, album.artist);
+                card.onclick = () => loadAlbumDetails(album.id, album.cover, album.name, album.artist, null, null, album.genre);
                 grid.appendChild(card);
             });
         }
 
-        // GENERACIÓN DE GRÁFICAS Y ESTADÍSTICAS EN PANTALLA PRINCIPAL
+        // GENERACIÓN DE GRÁFICAS Y ESTADÍSTICAS
         function renderCharts() {
             const albums = Object.values(myCollection);
             
-            // Actualizar resumen de cabecera
             document.getElementById('statTotalAlbums').innerText = albums.length;
             
-            let totalTracksScoreCount = 0;
             let sumAlbumScores = 0;
+            const genreCounts = {};
 
             albums.forEach(a => {
                 sumAlbumScores += parseFloat(a.score) || 0;
+                const g = a.genre || 'Música';
+                genreCounts[g] = (genreCounts[g] || 0) + 1;
             });
 
             const avgAlbumScore = albums.length > 0 ? (sumAlbumScores / albums.length).toFixed(1) : '-';
             document.getElementById('statAvgScore').innerText = avgAlbumScore;
 
-            // Recopilar todas las notas de canciones
             let allSongRatings = [];
             Object.keys(savedRatings).forEach(albumId => {
                 Object.keys(savedRatings[albumId]).forEach(trackId => {
@@ -859,7 +924,7 @@
 
             document.getElementById('statTotalTracks').innerText = allSongRatings.length;
 
-            // 1. DIBUJAR GRÁFICA DE ÁLBUMES (Rangos de 10 en 10: 0-1, 1-2, 2-3... hasta 9-10)
+            // 1. GRÁFICA DE ÁLBUMES
             const albumBins = new Array(10).fill(0);
             albums.forEach(a => {
                 const score = parseFloat(a.score);
@@ -879,42 +944,75 @@
                 const wrapper = document.createElement('div');
                 wrapper.className = 'chart-bar-wrapper';
                 wrapper.innerHTML = `
-                    <div class="chart-bar" style="height: ${heightPct}%;" title="${count} álbumes en rango ${albumLabels[i]}"></div>
+                    <div class="chart-bar" style="height: ${heightPct}%;" title="${count} álbumes"></div>
                     <span class="chart-label">${albumLabels[i]}</span>
                 `;
                 albumsChartContainer.appendChild(wrapper);
             });
 
-            // 2. DIBUJAR GRÁFICA DE CANCIONES (Rangos de 5 en 5: 0.0-0.5, 0.5-1.0... hasta 9.5-10.0 => 20 barras)
-            const songBins = new Array(21).fill(0); // 0 a 10 con pasos de 0.5
+            // 2. GRÁFICA DE CANCIONES (PANTALLA CHICA: DE 1 EN 1 DEL 1 AL 10)
+            const songBins10 = new Array(10).fill(0);
             allSongRatings.forEach(s => {
-                let binIndex = Math.min(Math.floor(s * 2), 20);
-                songBins[binIndex]++;
+                let binIndex = Math.min(Math.floor(s), 9);
+                if (s === 10) binIndex = 9;
+                songBins10[binIndex]++;
             });
 
-            const maxSongBin = Math.max(...songBins, 1);
+            const maxSongBin = Math.max(...songBins10, 1);
             const songsChartContainer = document.getElementById('songsChart');
             songsChartContainer.innerHTML = '';
 
-            for (let i = 0; i <= 20; i++) {
-                const scoreVal = (i * 0.5).toFixed(1);
-                const count = songBins[i];
+            const songLabels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
+            songBins10.forEach((count, i) => {
                 const heightPct = (count / maxSongBin) * 100;
-                
                 const wrapper = document.createElement('div');
                 wrapper.className = 'chart-bar-wrapper';
                 wrapper.innerHTML = `
-                    <div class="chart-bar" style="height: ${heightPct}%;" title="${count} canciones con nota ${scoreVal}"></div>
-                    <span class="chart-label">${scoreVal}</span>
+                    <div class="chart-bar" style="height: ${heightPct}%;" title="${count} canciones"></div>
+                    <span class="chart-label">${songLabels[i]}</span>
                 `;
                 songsChartContainer.appendChild(wrapper);
+            });
+
+            // 3. GRÁFICA DE GÉNEROS MUSICALES
+            const genresBarChart = document.getElementById('genresBarChart');
+            const genresLegend = document.getElementById('genresLegend');
+            genresBarChart.innerHTML = '';
+            genresLegend.innerHTML = '';
+
+            const genreEntries = Object.entries(genreCounts);
+            if (genreEntries.length === 0) {
+                genresBarChart.innerHTML = '<p style="font-size: 12px; color: var(--text-muted); width: 100%; text-align: center;">Agrega álbumes para ver tus géneros.</p>';
+                return;
             }
+
+            const totalGenreAlbums = albums.length;
+            genreEntries.forEach(([genreName, count], idx) => {
+                const color = genrePalette[idx % genrePalette.length];
+                const pct = ((count / totalGenreAlbums) * 100).toFixed(0);
+
+                // Barra
+                const wrapper = document.createElement('div');
+                wrapper.className = 'chart-bar-wrapper';
+                wrapper.innerHTML = `
+                    <div class="chart-bar" style="height: ${pct}%; background: ${color};" title="${genreName}: ${count} (${pct}%)"></div>
+                    <span class="chart-label">${pct}%</span>
+                `;
+                genresBarChart.appendChild(wrapper);
+
+                // Leyenda
+                const item = document.createElement('div');
+                item.className = 'genre-legend-item';
+                item.innerHTML = `<span class="genre-color-dot" style="background: ${color};"></span> ${genreName} (${count})`;
+                genresLegend.appendChild(item);
+            });
         }
 
         function cerrarAlbum() {
             const audio = document.getElementById('audioPreview');
             if (audio) audio.pause();
             currentPlayingAudio = null;
+            document.getElementById('dynamic-bg').classList.remove('audio-active');
 
             document.getElementById('albumView').style.display = 'none';
             document.getElementById('homeView').style.display = 'block';
