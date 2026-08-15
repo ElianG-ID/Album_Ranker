@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Calificador de Álbumes</title>
+    <title>Album Ranker</title>
     
     <!-- FAVICON: Listo para tu propio archivo -->
     <link rel="icon" type="image/png" href="tu-icono.png">
@@ -14,6 +14,7 @@
             --text-main: #ffffff;
             --text-muted: #d0d0d0;
             --card-bg: rgba(0,0,0,0.4);
+            --danger: #ff5252;
         }
         
         body, html {
@@ -26,7 +27,7 @@
             overflow-x: hidden;
         }
 
-        /* FONDO LÍQUIDO */
+        /* ANIMACIÓN DEL FONDO LÍQUIDO */
         @keyframes liquidFlow {
             0% { transform: scale(1.2) translate(0, 0) rotate(0deg); }
             33% { transform: scale(1.6) translate(-6%, 8%) rotate(4deg); }
@@ -56,7 +57,6 @@
             border-radius: 50%;
             backdrop-filter: blur(12px) brightness(1.1); 
             -webkit-backdrop-filter: blur(12px) brightness(1.1);
-            /* Modificado a 4 segundos para un efecto relajante de estela */
             animation: waterRipple 4s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
             transform: translate(-50%, -50%);
         }
@@ -64,6 +64,15 @@
         @keyframes waterRipple {
             0% { width: 0px; height: 0px; opacity: 1; border-width: 4px; }
             100% { width: 350px; height: 350px; opacity: 0; border-width: 0px; }
+        }
+
+        /* TRANSICIÓN SUAVE DE VISTAS */
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         /* CONTENEDOR PRINCIPAL */
@@ -103,6 +112,9 @@
 
         .btn-primary { background: var(--accent); color: #000; border: none; width: 100%; margin-top: 20px; box-shadow: 0 4px 15px rgba(187, 134, 252, 0.4); }
         .btn-primary:hover { background: #d0a8ff; }
+        
+        .btn-danger { background: rgba(255, 82, 82, 0.2); color: var(--danger); border: 1px solid var(--danger); width: 100%; margin-top: 10px; }
+        .btn-danger:hover { background: rgba(255, 82, 82, 0.4); }
 
         /* REJILLA DE ÁLBUMES */
         .grid-container {
@@ -166,7 +178,8 @@
             margin-top: 30px; padding: 25px; background: rgba(0,0,0,0.4); border-radius: 16px; text-align: center;
             border: 1px solid rgba(255,255,255,0.2); box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
         }
-        .score-panel h2 { margin: 0 0 10px 0; font-size: 18px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .score-panel h2 { margin: 0 0 5px 0; font-size: 18px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .progress-sub { font-size: 13px; color: var(--accent); margin-bottom: 10px; display: block; }
         .score-value { font-size: 64px; font-weight: bold; color: white; margin: 0; text-shadow: 0 4px 12px rgba(0,0,0,0.8); }
         
         #loading { display: none; text-align: center; color: var(--text-muted); padding: 20px; font-size: 18px; }
@@ -194,9 +207,9 @@
 
     <div class="container-wrapper">
         <div class="glass-panel">
-            <h1>Calificador de Álbumes</h1>
+            <h1>Album Ranker</h1>
             
-            <div id="homeView">
+            <div id="homeView" class="fade-in">
                 <div class="controls-row">
                     <input type="text" id="searchInput" placeholder="Buscar un nuevo álbum..." onkeypress="if(event.key === 'Enter') searchAlbums()">
                     <button onclick="searchAlbums()">Buscar</button>
@@ -222,7 +235,7 @@
 
                     <div id="savedAlbumsGrid" class="grid-container"></div>
 
-                    <!-- NUEVA SECCIÓN: Respaldo de Datos -->
+                    <!-- RESPALDO DE DATOS -->
                     <div class="backup-section">
                         <h2 style="font-size: 16px; color: var(--text-muted); margin-bottom: 15px;">Respaldo y Recuperación</h2>
                         <div class="controls-row">
@@ -234,12 +247,13 @@
                 </div>
             </div>
 
-            <div id="albumView">
+            <div id="albumView" class="fade-in">
                 <div class="album-header" id="albumHeader"></div>
                 <div id="trackList"></div>
                 
                 <div class="score-panel">
-                    <h2>Calificación Promedio</h2>
+                    <h2>Calificación</h2>
+                    <span id="progressTrack" class="progress-sub">0 / 0 canciones puntuadas</span>
                     <p class="score-value" id="finalScore">-</p>
                 </div>
 
@@ -249,6 +263,7 @@
                 </div>
                 
                 <button id="btnGuardar" class="btn-primary" onclick="guardarEnColeccion()">Guardar en mi colección</button>
+                <button id="btnEliminar" class="btn-danger" style="display:none;" onclick="eliminarDeColeccion()">Eliminar de mi colección</button>
                 <button onclick="cerrarAlbum()" style="margin-top: 15px; width: 100%; padding: 16px;">Volver a inicio</button>
             </div>
         </div>
@@ -258,12 +273,12 @@
         let savedRatings = JSON.parse(localStorage.getItem('myAlbumRatings')) || {};
         let myCollection = JSON.parse(localStorage.getItem('myCollectionInfo')) || {};
         let currentAlbumData = {};
+        let currentTotalTracksCount = 0;
 
         // LÓGICA DE ESTELA (Ondas Suaves y Espaciadas)
         let lastRippleTime = 0;
         document.addEventListener('pointermove', (e) => {
             const now = Date.now();
-            // Aumentado a 400ms para que se vea mucho más sutil y menos abrumador
             if (now - lastRippleTime < 400) return; 
             lastRippleTime = now;
             
@@ -273,17 +288,14 @@
             ripple.style.top = e.clientY + 'px';
             document.getElementById('ripple-container').appendChild(ripple);
             
-            // Eliminamos la onda del código HTML cuando termina la animación (4s)
             setTimeout(() => ripple.remove(), 4000);
         });
 
-        // Al iniciar, cargamos la colección y el fondo aleatorio
         window.onload = () => { 
             renderizarColeccion(); 
             setRandomHomeBackground();
         };
 
-        // Función para elegir un fondo aleatorio de la colección
         function setRandomHomeBackground() {
             const albums = Object.values(myCollection);
             if (albums.length > 0) {
@@ -294,7 +306,6 @@
             }
         }
 
-        // RESPALDO DE DATOS (Exportar / Importar)
         function exportData() {
             const dataToExport = {
                 ratings: savedRatings,
@@ -336,11 +347,11 @@
                         alert("El archivo no tiene el formato correcto.");
                     }
                 } catch (error) {
-                    alert("Hubo un error al leer el archivo. Asegúrate de seleccionar un archivo válido.");
+                    alert("Hubo un error al leer el archivo.");
                 }
             };
             reader.readAsText(file);
-            event.target.value = ''; // Resetea el input para poder subir el mismo archivo después si se necesita
+            event.target.value = '';
         }
 
         function fetchAppleMusic(url) {
@@ -372,7 +383,8 @@
             document.getElementById('dynamic-bg').style.backgroundImage = 'none';
 
             try {
-                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=album&limit=12`;
+                // MODIFICACIÓN: explicit=Yes y limit=25
+                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=album&limit=25&explicit=Yes`;
                 const data = await fetchAppleMusic(url);
                 
                 document.getElementById('loading').style.display = 'none';
@@ -412,6 +424,10 @@
             btnGuardar.style.background = "var(--accent)";
             btnGuardar.style.color = "#000";
 
+            // Mostrar u ocultar botón de eliminar si ya está en la colección
+            const btnEliminar = document.getElementById('btnEliminar');
+            btnEliminar.style.display = myCollection[albumId] ? 'block' : 'none';
+
             document.getElementById('dynamic-bg').style.backgroundImage = `url('${coverUrl}')`;
             
             if (!savedRatings[albumId]) savedRatings[albumId] = {};
@@ -425,6 +441,7 @@
                 
                 const albumInfo = data.results[0]; 
                 const tracks = data.results.filter(item => item.wrapperType === 'track');
+                currentTotalTracksCount = tracks.length;
                 
                 const dateToUse = releaseDateApi || albumInfo.releaseDate;
                 const releaseYear = dateToUse ? new Date(dateToUse).getFullYear() : 'Desconocido';
@@ -516,6 +533,9 @@
                 .filter(r => typeof r === 'number');
 
             const finalScoreElement = document.getElementById('finalScore');
+            const progressElement = document.getElementById('progressTrack');
+            
+            progressElement.innerText = `${validRatings.length} / ${currentTotalTracksCount} canciones puntuadas`;
             
             if (validRatings.length === 0) {
                 finalScoreElement.innerText = '-';
@@ -567,6 +587,17 @@
             btn.innerText = "¡Guardado con éxito!";
             btn.style.background = "#69f0ae"; 
             btn.style.color = "#000";
+            
+            document.getElementById('btnEliminar').style.display = 'block';
+        }
+
+        // QoL: ELIMINAR ÁLBUM DE LA COLECCIÓN
+        function eliminarDeColeccion() {
+            if (confirm(`¿Estás seguro de que deseas eliminar "${currentAlbumData.name}" de tu colección?`)) {
+                delete myCollection[currentAlbumData.id];
+                localStorage.setItem('myCollectionInfo', JSON.stringify(myCollection));
+                cerrarAlbum();
+            }
         }
 
         function renderizarColeccion() {
@@ -626,10 +657,8 @@
             document.getElementById('collectionSection').style.display = 'block';
             
             renderizarColeccion();
-            setRandomHomeBackground(); // Actualiza el fondo al volver a la pantalla principal
+            setRandomHomeBackground();
         }
     </script>
 </body>
 </html>
-
-```
